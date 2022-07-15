@@ -120,15 +120,15 @@ class SimCLR(object):
 
     def _load_pre_trained_weights(self, config, model):
         try:
-            print(f"  ----- Loaded pre-trained model from {load_model_dir} for SSL-----  ")
             if config.lap == 1:
                 load_model_dir = config.log_dir
             else:
                 load_model_dir = config.log_dir__old
+            print(f"  ----- Loaded pre-trained model from {load_model_dir} for SSL  -----")
             state_dict = torch.load(os.path.join('./', load_model_dir, 'checkpoints', 'model.pth'))
             model.load_state_dict(state_dict)
         except FileNotFoundError:
-            print("Pre-trained weights not found. Training from scratch.")
+            print("  ----- Pre-trained weights not found. Training from scratch.  -----")
 
         return model
 
