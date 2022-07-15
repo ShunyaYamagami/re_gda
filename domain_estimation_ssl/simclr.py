@@ -57,8 +57,11 @@ class SimCLR(object):
         loss = self.nt_xent_criterion(zis, zjs)
         return loss
 
-    def train(self):
+    def train(self, does_load_model=False):
         train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=self.config.batch_size, shuffle=True, num_workers=2, drop_last=True)
+        # save config file
+        model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
+        _save_config_file(self.config.config_path, model_checkpoints_folder)
 
         if self.config.dataset.parent == "Digit":
             model = Encoder().to(self.device)
@@ -70,15 +73,20 @@ class SimCLR(object):
             else:
                 model = ResNetSimCLR(self.config.model.base_model, self.config.model.out_dim).to(self.device)
 
+        ### ADD 2回目任意で1回目の重みをロードしてファインチューニングできればと．
+        if does_load_model:
+            model = self._load_pre_trained_weights(self.config, model)
+            # de-fine tuningみたいな
+            # for layers in list(model.children())[:-3]:
+            #     for param in layers.parameters():
+            #         param.requires_grad = False
+
         optimizer = torch.optim.Adam(model.parameters(), 1e-3, weight_decay=eval(self.config.weight_decay))
-        # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0, last_epoch=-1)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0, last_epoch=-1)
         if apex_support and self.config.fp16_precision:
             model, optimizer = amp.initialize(model, optimizer,
                                               opt_level='O2',
                                               keep_batchnorm_fp32=True)
-        # save config file
-        model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
-        _save_config_file(self.config.config_path, model_checkpoints_folder)
 
         n_iter = 0
         valid_n_iter = 0
@@ -104,17 +112,24 @@ class SimCLR(object):
                     loss.backward()
 
                 optimizer.step()
+                scheduler.step()
                 n_iter += 1
 
             torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
 
 
-    def _load_pre_trained_weights(self, model):
+    def _load_pre_trained_weights(self, config, model):
         try:
-            checkpoints_folder = os.path.join('./runs', self.config.fine_tune_from, 'checkpoints')
+            print(f"  -----  Load Model from {self.config.log_dir} for SSL  -----")
+            # checkpoints_folder = os.path.join('./runs', self.config.fine_tune_from, 'checkpoints')
+            if config.lap == 1:
+                checkpoints_folder = os.path.join('./', config.log_dir, 'checkpoints')
+            if config.lap == 2:
+                checkpoints_folder = os.path.join('./', config.log_dir__old, 'checkpoints')
             state_dict = torch.load(os.path.join(checkpoints_folder, 'model.pth'))
             model.load_state_dict(state_dict)
             print("Loaded pre-trained model with success.")
+            print(f"  ----- Load {config.log_dir__old} -----  ")
         except FileNotFoundError:
             print("Pre-trained weights not found. Training from scratch.")
 

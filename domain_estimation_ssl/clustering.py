@@ -1,14 +1,10 @@
-
-import numpy as np
-import torch
 import os
-from torchvision.transforms import transforms
+import numpy as np
 
+import torch
 from models.baseline_encoder import Encoder
 from models.alexnet_simclr import AlexSimCLR
 from models.resnet_simclr import ResNetSimCLR
-
-from data_aug.gaussian_blur import GaussianBlur
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -17,11 +13,59 @@ from sklearn.mixture import GaussianMixture as GMM
 from sklearn.metrics import normalized_mutual_info_score as NMI
 import matplotlib.pyplot as plt
 
-
 from dataset import get_datasets
 
 
-def  run_clustering(config):
+def plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c):
+    plt.clf()
+    plt.figure(figsize=(3,3))
+    plt.scatter(feats_dim_reduced[:, 0], feats_dim_reduced[:, 1], s=1, c=c)
+    plt.axis("off")
+    plt.savefig(os.path.join(log_dir, f'{dim_red_method}_plot.pdf'), box_inches="tight")
+
+
+def clustering_exec(feats, dim_red_method, clust_method, dataset, log_dir, nmi_output=False):
+    if dim_red_method == 'tsne':
+        dim_reduce = TSNE(n_components=2, perplexity=30, verbose=1, n_jobs=3)
+    elif dim_red_method == 'pca':
+        dim_reduce = PCA()
+    feats_dim_reduced = dim_reduce.fit_transform(feats)
+    ### domain_labels  c=dataset.domain_labelsにより，推定ドメインラベルにより色分けした特徴量の散布図をplot
+    # plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c=dataset.domain_labels, outname=f'{dim_red_method}_plot.pdf')
+    # # class labels  推定クラスラベルにより色分けした特徴量の散布図をplot
+    # plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c=dataset.labels, outname=f'{dim_red_method}_labels_plot.pdf')
+    ### 推定domain_labelsをk-meansでクラスタリングし，csvにexport
+    if clust_method == 'kmeans':
+        domain_clustering = KMeans(n_clusters=len(np.unique(dataset.domain_labels)))
+        class_clustering = KMeans(n_clusters=len(np.unique(dataset.labels)))
+    elif clust_method == 'gmm':
+        domain_clustering = GMM(n_components=len(np.unique(dataset.domain_labels)))
+        class_clustering = GMM(n_components=len(np.unique(dataset.labels)))
+    domain_cluster = np.array(domain_clustering.fit_predict(feats_dim_reduced))
+    class_cluster = np.array(class_clustering.fit_predict(feats_dim_reduced))
+    
+    np.savetxt(os.path.join(log_dir, f'real_domain.csv'), dataset.domain_labels, delimiter=",")
+    np.savetxt(os.path.join(log_dir, f'real_class.csv'), dataset.labels, delimiter=",")
+    np.savetxt(os.path.join(log_dir, f'cluster_{dim_red_method}_{clust_method}.csv'), domain_cluster, delimiter=",")
+    np.savetxt(os.path.join(log_dir, f"cluster_{dim_red_method}_{clust_method}_class.csv"), class_cluster, delimiter=",")
+    # plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c=domain_cluster, outname=f'{dim_red_method}_cluster.pdf')
+    # plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c=class_cluster, outname=f'{dim_red_method}_cluster_class.pdf')
+
+    if nmi_output:
+        nmi = NMI(dataset.domain_labels, domain_cluster)
+        nmi_class = NMI(dataset.labels, class_cluster)
+        with open(os.path.join(log_dir, "nmi.txt"), 'w') as f:
+            f.write(f'nmi:{nmi}\n')
+        with open(os.path.join(log_dir, "nmi_class.txt"), "w") as f:
+            f.write(f'nmi_class:{nmi_class}\n')
+        print(f'nmi:{nmi}')
+        print(f'nmi class:{nmi_class}')
+
+    dataset.edls = domain_cluster
+    return dataset
+
+
+def run_clustering(config):
     if config.dataset.parent == 'Digit':
         model = Encoder()
     elif config.dataset.parent == 'Office31':
@@ -40,7 +84,7 @@ def  run_clustering(config):
 
     model.eval()
     model_path = os.path.join(config.log_dir, "checkpoints", "model.pth")
-    print(f"  ----- Load Model from {config.log_dir} -----")
+    print(f"  -----  Load Model from {config.log_dir} for clustering  -----")
     model.load_state_dict(torch.load(model_path))
     model.cuda()
 
@@ -50,54 +94,13 @@ def  run_clustering(config):
             im = im.cuda()
             feat, _ = model(im)
             feats.append(feat.cpu().numpy())
+            # feats.append(feat[3].cpu().numpy())  # each layer用
     feats = np.concatenate(feats)
 
-    # # tsne plot
-    # tsne = TSNE(n_components=2, perplexity=30, verbose=1, n_jobs=3)
-    # feats_decomposit = tsne.fit_transform(feats)
-    # plt.figure(figsize=(3,3))
-    # scatter = plt.scatter(feats_decomposit[:, 0], feats_decomposit[:, 1], s=1, c=dataset.domain_labels)
-    # plt.axis("off")
-    # plt.savefig(os.path.join(config.log_dir, "tsne_plot.pdf"), box_inches="tight")
-    # plt.clf()
-    # plt.figure(figsize=(3,3))
-    # scatter = plt.scatter(feats_decomposit[:, 0], feats_decomposit[:, 1], s=1, c=dataset.labels)
-    # plt.axis("off")
-    # plt.savefig(os.path.join(config.log_dir, "tsne_labels_plot.pdf"), box_inches="tight")
-    # kmeans = KMeans(n_clusters=len(np.unique(dataset.domain_labels)))
-    # cluster = np.array(kmeans.fit_predict(feats_decomposit))
-    # np.savetxt(os.path.join(config.log_dir, "cluster.csv"), cluster, delimiter=",")
+    ### TSNE clustering
+    # dataset, domain_cluster = clustering_exec(feats, 'tsne', 'kmeans', dataset, config.log_dir)
+    ### PCA clustering
+    edls_dataset = clustering_exec(feats, 'pca', 'gmm', dataset, config.log_dir, nmi_output=True)
 
-    pca = PCA()
-    feats_pca = pca.fit_transform(feats)
-
-    # plt.clf()
-    # plt.scatter(feats_pca[:, 0], feats_pca[:, 1], s=1, c=dataset.domain_labels)
-    # plt.savefig(os.path.join(config.log_dir, "pca_plot.pdf"))
-    # plt.clf()
-    # plt.scatter(feats_pca[:, 0], feats_pca[:, 1], s=1, c=dataset.labels)
-    # plt.savefig(os.path.join(config.log_dir, "pca_labels_plot.pdf"))
-
-    gmm = GMM(n_components=len(np.unique(dataset.domain_labels)))
-    cluster = np.array(gmm.fit_predict(feats_pca))
-    # plt.clf()
-    # plt.scatter(feats_pca[:, 0], feats_pca[:, 1], s = 1, c=cluster)
-    # plt.savefig(os.path.join(config.log_dir, "pca_cluster.pdf"))
-    np.savetxt(os.path.join(config.log_dir, "cluster_pca.csv"), cluster, delimiter=",")
-    nmi = NMI(dataset.domain_labels, cluster)
-    print(f'nmi:{nmi}')
-    with open(os.path.join(config.log_dir, "nmi.txt"), 'w') as f:
-        f.write(f'nmi:{nmi}\n')
-
-
-    gmm = GMM(n_components=len(np.unique(dataset.labels)))
-    cluster = np.array(gmm.fit_predict(feats_pca))
-    # plt.clf()
-    # plt.scatter(feats_pca[:, 0], feats_pca[:, 1], s = 1, c=cluster)
-    # plt.savefig(os.path.join(config.log_dir, "pca_cluster_class.pdf"))
-    np.savetxt(os.path.join(config.log_dir, "cluster_pca_class.csv"), cluster, delimiter=",")
-    nmi = NMI(dataset.labels, cluster)
-    print(f'nmi class:{nmi}')
-    with open(os.path.join(config.log_dir, "nmi_class.txt"), "w") as f:
-        f.write(f'nmi:{nmi}\n')
+    # return feats, edls_dataset
 
