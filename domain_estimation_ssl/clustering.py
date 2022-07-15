@@ -22,18 +22,9 @@ from dataset import get_datasets
 
 
 def  run_clustering(config):
-
     if config.dataset.parent == 'Digit':
-        data_transforms = transforms.Compose([transforms.Resize(32),
-                                            transforms.Grayscale(),
-                                            transforms.ToTensor(),
-                                            transforms.Normalize([0.5],[0.5])])
         model = Encoder()
     elif config.dataset.parent == 'Office31':
-        data_transforms = transforms.Compose([transforms.Resize(size=config.model.imsize),
-                                              transforms.Grayscale(3),
-                                              transforms.ToTensor(),
-                                              transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
         if config.model.base_model == 'alexnet':
             model = AlexSimCLR(config.model.out_dim)
         elif config.model.base_model == 'encoder':
@@ -44,7 +35,8 @@ def  run_clustering(config):
     if isinstance(config.dataset.grid, list):
         config.dataset.grid = min(config.dataset.grid)
 
-    dataset = get_datasets(config.dataset.parent, config.dataset.dset_taples, data_transforms, config.dataset.jigsaw, config.dataset.grid)
+    dataset = get_datasets(config, 'eval')
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=56, shuffle=False)
 
     model.eval()
     model_path = os.path.join(config.log_dir, "checkpoints", "model.pth")
@@ -52,14 +44,11 @@ def  run_clustering(config):
     model.load_state_dict(torch.load(model_path))
     model.cuda()
 
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=56, shuffle=False)
-
     feats = []
     with torch.no_grad():
         for im, _ in dataloader:
             im = im.cuda()
             feat, _ = model(im)
-
             feats.append(feat.cpu().numpy())
     feats = np.concatenate(feats)
 

@@ -45,7 +45,7 @@ class SimCLR(object):
         print("Running on:", device)
         return device
 
-    def _step(self, model, xis, xjs, n_iter):
+    def _step(self, model, xis, xjs):
 
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
@@ -71,17 +71,13 @@ class SimCLR(object):
                 model = ResNetSimCLR(self.config.model.base_model, self.config.model.out_dim).to(self.device)
 
         optimizer = torch.optim.Adam(model.parameters(), 1e-3, weight_decay=eval(self.config.weight_decay))
-
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0, last_epoch=-1)
-
         if apex_support and self.config.fp16_precision:
             model, optimizer = amp.initialize(model, optimizer,
                                               opt_level='O2',
                                               keep_batchnorm_fp32=True)
-
-        model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
-
         # save config file
+        model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
         _save_config_file(self.config.config_path, model_checkpoints_folder)
 
         n_iter = 0
@@ -95,7 +91,7 @@ class SimCLR(object):
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
 
-                loss = self._step(model, xis, xjs, n_iter)
+                loss = self._step(model, xis, xjs)
 
                 if n_iter % self.config.log_every_n_steps == 0:
                     print(f'Epoch:{epoch_counter}/{self.config.epochs}({n_iter}) loss:{loss}')
@@ -112,6 +108,7 @@ class SimCLR(object):
 
             torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
 
+
     def _load_pre_trained_weights(self, model):
         try:
             checkpoints_folder = os.path.join('./runs', self.config.fine_tune_from, 'checkpoints')
@@ -122,6 +119,7 @@ class SimCLR(object):
             print("Pre-trained weights not found. Training from scratch.")
 
         return model
+
 
     def _validate(self, model, valid_loader):
         # validation steps

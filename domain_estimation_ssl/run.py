@@ -28,34 +28,17 @@ def main(args):
     config.second_flag = int(args.second_flag)
 
 
-    if config.dataset.parent == 'Digit':
-        data_transforms = transforms.Compose([transforms.RandomResizedCrop(32),
-                                        transforms.Grayscale(),
-                                        GaussianBlur(kernel_size=int(0.3 * 32), min=0.1, max=2.5),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize([0.5],[0.5]),
-                                        transforms.Lambda(lambda x: x * (torch.from_numpy(np.random.binomial(1, 0.5, (1)).astype(np.float32) * 2 - 1))),
-                                        transforms.Lambda(lambda x: x * (torch.from_numpy(np.random.uniform(low=0.25, high=1.5, size=(1)).astype(np.float32)))),
-                                        transforms.Lambda(lambda x: x + (torch.from_numpy(np.random.uniform(low=-0.5, high=0.5, size=(1)).astype(np.float32))))
-                                        ])
-    elif config.dataset.parent == 'Office31':
-        data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=config.model.imsize, scale=(0.08, 1.0)),
-                                              transforms.Grayscale(3),
-                                              transforms.RandomHorizontalFlip(),
-                                              transforms.ToTensor(),
-                                              transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
-                                              ])
-
     print(f"""    ---------------------------------------------------------
             batch_size: {config.batch_size},  epochs: {config.epochs}
             SSL: {config.model.ssl},  base_model: {config.model.base_model}
             jigsaw: {config.dataset.jigsaw},  fourier: {config.dataset.fourier}
             lap: {config.lap},  second_flag: {config.second_flag}
     ---------------------------------------------------------""")
-    
+
     if config.lap == 1:
         print("================= 1周目 =================")
-        dataset = get_datasets(config.dataset.parent, config.dataset.dset_taples, data_transforms, config.dataset.jigsaw, config.dataset.grid)
+        # dataset = get_datasets(config.dataset.parent, config.dataset.dset_taples, data_transforms, config.dataset.jigsaw, config.dataset.grid)
+        dataset = get_datasets(config, 'train')
         simclr = SimCLR(dataset, config)
         simclr.train()
 
