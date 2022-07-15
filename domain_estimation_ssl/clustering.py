@@ -67,12 +67,12 @@ def clustering_exec(feats, dim_red_method, clust_method, dataset, log_dir, nmi_o
 
 def run_clustering(config):
     if config.dataset.parent == 'Digit':
-        model = Encoder()
+        model = Encoder(config.model.ssl)
     elif config.dataset.parent == 'Office31':
         if config.model.base_model == 'alexnet':
             model = AlexSimCLR(config.model.out_dim)
         elif config.model.base_model == 'encoder':
-            model = Encoder(3, config.model.out_dim)
+            model = Encoder(input_dim=3, out_dim=config.model.out_dim)
         else:
             model = ResNetSimCLR(config.model.base_model, config.model.out_dim)
 

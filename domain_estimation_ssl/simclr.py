@@ -3,6 +3,7 @@ import numpy as np
 import shutil
 import sys
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
@@ -47,7 +48,7 @@ class SimCLR(object):
         return device
 
 
-    def _step(self, model, xis, xjs):
+    def _simclr_step(self, model, xis, xjs):
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
         rjs, zjs = model(xjs)  # [N,C]
@@ -59,6 +60,21 @@ class SimCLR(object):
         return loss
 
 
+    def _simsiam_step(self, model, xis, xjs, criterion):
+        # get the representations and the projections
+        _, zis, pis = model(xis)  # [N,C]  ミニバッチなので負例も大量に含まれている.
+        _, zjs, pjs = model(xjs)  # [N,C]
+        zis, zjs = zis.detach(), zjs.detach()  # 勾配の停止
+        # normalize projection feature vectors
+        zis, pis = F.normalize(zis, dim=1), F.normalize(pis, dim=1)
+        zjs, pjs = F.normalize(zjs, dim=1), F.normalize(pjs, dim=1)
+
+        loss1 = criterion(pis, zjs).mean()  # predictopnとprojectionを比較して類似度計算
+        loss2 = criterion(pjs, zis).mean()  # 2つの損失関数を用意する
+        loss = -(loss1 + loss2) / 2  # それぞれの損失を最適化する
+        return loss
+
+
     def train(self, does_load_model=False):
         train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=self.config.batch_size, shuffle=True, num_workers=2, drop_last=True)
         # save config file
@@ -66,12 +82,12 @@ class SimCLR(object):
         _save_config_file(self.config.config_path, model_checkpoints_folder)
 
         if self.config.dataset.parent == "Digit":
-            model = Encoder().to(self.device)
+            model = Encoder(self.config.model.ssl).to(self.device)
         elif self.config.dataset.parent == "Office31":
             if self.config.model.base_model == "alexnet":
                 model = AlexSimCLR(self.config.model.out_dim).to(self.device)
             elif self.config.model.base_model == 'encoder':
-                model = Encoder(3, self.config.model.out_dim).to(self.device)
+                model = Encoder(self.config.model.ssl, input_dim=3, out_dim=self.config.model.out_dim).to(self.device)
             else:
                 model = ResNetSimCLR(self.config.model.base_model, self.config.model.out_dim).to(self.device)
 
@@ -82,7 +98,11 @@ class SimCLR(object):
             # for layers in list(model.children())[:-3]:
             #     for param in layers.parameters():
             #         param.requires_grad = False
-
+            
+        if self.config.model.ssl == 'simsiam':
+            model.ssl = self.config.model.ssl
+            criterion = nn.CosineSimilarity(dim=1).to(self.device)  # コサイン類似度
+            
         optimizer = torch.optim.Adam(model.parameters(), 1e-3, weight_decay=eval(self.config.weight_decay))
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0, last_epoch=-1)
         if apex_support and self.config.fp16_precision:
@@ -99,7 +119,10 @@ class SimCLR(object):
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
 
-                loss = self._step(model, xis, xjs)
+                if self.config.model.ssl == 'simclr':
+                    loss = self._simclr_step(model, xis, xjs)
+                elif self.config.model.ssl == 'simsiam':
+                    loss = self._simsiam_step(model, xis, xjs, criterion)
 
                 if n_iter % self.config.log_every_n_steps == 0:
                     print(f'Epoch:{epoch_counter}/{self.config.epochs}({n_iter}) loss:{loss}')
