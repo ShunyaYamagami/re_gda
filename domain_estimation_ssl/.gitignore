@@ -1,0 +1,11 @@
+data/*
+record/*/*/events.*
+
+# *.out
+# *.pyc
+# *.ipynb
+# *.sh
+
+# runs/
+record/
+# config/

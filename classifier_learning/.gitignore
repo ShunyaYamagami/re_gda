@@ -1,0 +1,15 @@
+data
+.ipynb_checkpoints/
+pretrained/
+
+record/
+misc/
+jupyter/
+analyze/
+
+*.pyc
+*.ipynb
+*.json
+*.pdf
+*.out
+*.sh

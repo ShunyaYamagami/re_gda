@@ -1,0 +1,26 @@
+batch_size: 512
+epochs: 150
+log_every_n_steps: 50
+eval_every_n_epochs: 1
+fine_tune_from: None
+weight_decay: 10e-6
+fp16_precision: False
+
+dataset:
+  parent: "Office31"
+  target_dsets: ['dslr', 'webcam']
+  dset_taples: [['dslr', [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]],
+                ['webcam', [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]]]
+  jigsaw: True
+  fourier: False
+  grid: 3
+model:
+  out_dim: 64
+  base_model: "encoder"
+  # base_model: "resnet18"
+  # base_model: "resnet50"
+  imsize: 32
+  ssl: 'simclr'
+loss:
+  temperature: 0.5
+  use_cosine_similarity: True
