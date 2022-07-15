@@ -1,6 +1,8 @@
 import argparse
 from easydict import EasyDict
 import numpy as np
+import os
+import pandas as pd
 import torch
 from torchvision.transforms import transforms
 import yaml
@@ -35,14 +37,29 @@ def main(args):
             lap: {config.lap},  second_flag: {config.second_flag}
     ---------------------------------------------------------""")
 
-    if config.lap == 1:
-        print("================= 1周目 =================")
-        # dataset = get_datasets(config.dataset.parent, config.dataset.dset_taples, data_transforms, config.dataset.jigsaw, config.dataset.grid)
-        dataset = get_datasets(config, 'train')
-        simclr = SimCLR(dataset, config)
-        simclr.train()
+    # if config.lap == 1:
+    #     print("================= 1周目 =================")
+    #     # dataset = get_datasets(config.dataset.parent, config.dataset.dset_taples, data_transforms, config.dataset.jigsaw, config.dataset.grid)
+    #     dataset = get_datasets(config, 'train')
+    #     simclr = SimCLR(dataset, config)
+    #     simclr.train()
 
-        print("================= Clustering 1 =================")
+    #     print("================= Clustering 1 =================")
+    #     run_clustering(config)
+
+        
+    if config.second_flag:
+        config.lap += 1
+        print(f"================= {config.lap}周目 =================")
+        config.edls = pd.read_csv(os.path.join(config.log_dir, 'cluster_pca_gmm.csv'), names=['domain_label'], dtype=int).domain_label.values
+        config.log_dir__old = config.log_dir  # simclrのdoes_load_modelだけのために設けた．
+        config.log_dir += '__edls'
+
+        dataset_2 = get_datasets(config, 'train')
+        simclr_2 = SimCLR(dataset_2, config)
+        simclr_2.train(does_load_model=True)
+        
+        print(f"================= Clustering {config.lap} =================")
         run_clustering(config)
 
 if __name__ == "__main__":

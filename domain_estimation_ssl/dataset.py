@@ -9,37 +9,27 @@ import torch.utils.data as data
 from torchvision.transforms import transforms
 
 from data_aug.gaussian_blur import GaussianBlur
-from fourier_funcs import *
+from functions import *
 
 
-def load(fi, config, root, filename, resize=(32, 32)) -> Image:
-    jigsaw, fourier, grid, lap = \
-        config.dataset.jigsaw, config.dataset.fourier, config.dataset.grid, config.lap
-
+def second_load(fi, config, root, filename, resize=(32, 32)) -> Image:
     im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
+    grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
+    if config.dataset.fourier:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 5, const_value=0)  # 位相・振幅に一定値を入れる．
+    if config.dataset.jigsaw:
+        im = get_jigsaw(im, resize, grid)
 
-    if isinstance(grid, list):
-        grid = random.choice(grid)
+    return fi, im
 
-    if fourier:
-        ##### 位相・振幅にランダムな値を入れる．
-        im = np.array(im).transpose(2, 0, 1)  # to (C, W, H)
-        fourier_img1 = input_const_values(
-            im, resize,
-            const_abs=False, const_pha=True,
-            n_random = resize[0] * resize[1] // 5,  # 一定値を入れるpixel数
-            const_value=0,
-        )
-        im = Image.fromarray(fourier_img1)
-
-    if jigsaw:
-        s = int(resize[0] / grid)
-        tile = [im.crop(np.array([s * (n % grid), s * int(n / grid), s * (n % grid + 1), s * (int(n / grid) + 1)]).astype(int)) for n in range(grid**2)]
-        random.shuffle(tile)
-        dst = Image.new('RGB', (int(s * grid), int(s * grid)))
-        for i, t in enumerate(tile):
-            dst.paste(t, (i % grid * s, int(i / grid) * s))
-        im = dst
+    
+def load(fi, config, root, filename, resize=(32, 32)) -> Image:
+    im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
+    grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
+    if config.dataset.fourier:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 5, const_value=0)  # 位相・振幅に一定値を入れる．
+    if config.dataset.jigsaw:
+        im = get_jigsaw(im, resize, grid)
 
     return fi, im
 
@@ -56,18 +46,14 @@ class LabeledDataset(data.Dataset):
 
         if config.lap == 1:
             self.processed = Parallel(n_jobs=4, verbose=1)([delayed(load)(fi, self.config, self.root, filename, resize) for fi, filename in enumerate(filenames)])
-
-        elif config.lap == 2:
+        else:
             # mix_filenames = get_mix_filenames(config, self.edls)
-            # self.processed = \
-            #     Parallel(n_jobs=4, verbose=1)([delayed(second_load)(fi, self.config, self.root, filename, resize, mix_filenames[edl])
-            #     for fi, (filename, edl) in enumerate(zip(filenames, self.edls))
-            # ])
+            # self.processed = Parallel(n_jobs=4, verbose=1)([delayed(second_load)(fi, self.config, self.root, filename, resize, mix_filenames[edl]) for fi, (filename, edl) in enumerate(zip(filenames, self.edls))])
             self.processed = Parallel(n_jobs=4, verbose=1)([delayed(second_load)(fi, self.config, self.root, filename, resize) for fi, filename in enumerate(filenames)])
 
         self.processed.sort(key=lambda x: x[0])  # 順番を元データ順に (https://qiita.com/kaggle_grandmaster-arai-san/items/4276079bf5e16b7de7a7#%E8%A8%88%E7%AE%97%E9%A0%86%E5%BA%8F%E3%81%AE%E8%A9%B1)
         self.imgs = [t[1] for t in self.processed]
-        
+
         self.domain_labels = np.array([domain_label] * len(self.imgs), dtype=np.int)
 
 
