@@ -24,7 +24,7 @@ def plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c):
     plt.savefig(os.path.join(log_dir, f'{dim_red_method}_plot.pdf'), box_inches="tight")
 
 
-def clustering_exec(feats, dim_red_method, clust_method, dataset, log_dir, nmi_output=False):
+def clustering_exec(config, feats, dim_red_method, clust_method, dataset, log_dir, nmi_output=False):
     if dim_red_method == 'tsne':
         dim_reduce = TSNE(n_components=2, perplexity=30, verbose=1, n_jobs=3)
     elif dim_red_method == 'pca':
@@ -58,11 +58,12 @@ def clustering_exec(feats, dim_red_method, clust_method, dataset, log_dir, nmi_o
             f.write(f'nmi:{nmi}\n')
         with open(os.path.join(log_dir, "nmi_class.txt"), "w") as f:
             f.write(f'nmi_class:{nmi_class}\n')
+        print(f"    -----  Load NMI File from {log_dir}  -----")
         print(f'nmi:{nmi}')
         print(f'nmi class:{nmi_class}')
 
     dataset.edls = domain_cluster
-    return dataset
+    return dataset, nmi, nmi_class
 
 
 def run_clustering(config):
@@ -100,7 +101,7 @@ def run_clustering(config):
     ### TSNE clustering
     # dataset, domain_cluster = clustering_exec(feats, 'tsne', 'kmeans', dataset, config.log_dir)
     ### PCA clustering
-    edls_dataset = clustering_exec(feats, 'pca', 'gmm', dataset, config.log_dir, nmi_output=True)
+    edls_dataset, nmi, nmi_class = clustering_exec(config, feats, 'pca', 'gmm', dataset, config.log_dir, nmi_output=True)
 
-    # return feats, edls_dataset
+    return feats, edls_dataset, nmi, nmi_class
 
