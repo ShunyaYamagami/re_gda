@@ -40,20 +40,20 @@ def main(args):
                 num_laps: {config.num_laps}
         ---------------------------------------------------------""")
 
-        print("=================  1周目  =================")
+        print(f"\n=================  1/{config.num_laps}周目  =================")
         config.lap = 1
         dataset = get_datasets(config, 'train')
         simclr = SimCLR(dataset, config)
         simclr.train()
 
-        print("=================  Clustering 1  =================")
+        print(f"=================  Clustering 1/{config.num_laps}  =================")
         feats, edls_dataset, nmi, nmi_class = run_clustering(config)
         log_spread_sheet(config, nmi, nmi_class)
         mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
             
         for ilap in range(2, config.num_laps + 1):  # 何周するか
             config.lap = ilap
-            print(f"=================  {config.lap}周目  =================")
+            print(f"=================  {config.lap}/{config.num_laps}周目  =================")
             config.edls = pd.read_csv(os.path.join(config.log_dir, 'cluster_pca_gmm.csv'), names=['domain_label'], dtype=int).domain_label.values
             config.log_dir__old = config.log_dir  # simclrのdoes_load_modelだけのために設けた．
             config.log_dir += f'__{config.lap}'
@@ -62,9 +62,10 @@ def main(args):
             simclr = SimCLR(dataset, config)
             simclr.train(does_load_model=True)
             
-            print(f"=================  Clustering {config.lap}  =================")
+            print(f"=================  Clustering {config.lap}/{config.num_laps}  =================")
             feats, edls_dataset, nmi, nmi_class = run_clustering(config)
             log_spread_sheet(config, nmi, nmi_class)
+            mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
     
         print('send_email')
         send_email(not_error=True, body_texts='\n'.join(mail_body_texts), config=config, nmi=nmi, nmi_class=nmi_class)

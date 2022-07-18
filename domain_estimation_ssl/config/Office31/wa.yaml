@@ -1,5 +1,5 @@
 batch_size: 256
-epochs: 100
+epochs: 150
 log_every_n_steps: 50
 eval_every_n_epochs: 1
 fine_tune_from: None
@@ -12,7 +12,7 @@ dataset:
   dset_taples: [['webcam', [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]],
                 ['amazon', [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]]]
   jigsaw: True
-  fourier: False
+  fourier: True
   grid: 3
 model:
   out_dim: 64
@@ -20,7 +20,7 @@ model:
   # base_model: "resnet18"
   # base_model: "resnet50"
   imsize: 32
-  ssl: 'simsiam'
+  ssl: 'simclr'
 loss:
   temperature: 0.5
   use_cosine_similarity: True

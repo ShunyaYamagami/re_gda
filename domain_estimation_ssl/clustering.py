@@ -58,7 +58,7 @@ def clustering_exec(config, feats, dim_red_method, clust_method, dataset, log_di
             f.write(f'nmi:{nmi}\n')
         with open(os.path.join(log_dir, "nmi_class.txt"), "w") as f:
             f.write(f'nmi_class:{nmi_class}\n')
-        print(f"    -----  Load NMI File from {log_dir}  -----")
+        print(f"  -----  Load NMI File from {log_dir}  -----")
         print(f'nmi:{nmi}')
         print(f'nmi class:{nmi_class}')
 

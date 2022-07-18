@@ -3,6 +3,8 @@ import yaml
 from easydict import EasyDict
 import numpy as np
 from time import time
+import sys
+sys.dont_write_bytecode = True  # pycacheを作らないようにする
 
 # Spread Sheet用
 import gspread
@@ -32,15 +34,4 @@ def config_to_execute(DATA_DOMAIN, PARENT, N_CUDA, log_dir_opt):
     log_dir = os.path.join("record", f"{config.dataset.parent}", f"CUDA{N_CUDA}", f"{domain_initials}_{config.model.base_model}{log_dir_opt}")
 
     return config, CONFIG_FILE, log_dir
-
-
-# get nmi score
-def get_nmi(log_dir):
-  with open(os.path.join(log_dir, "nmi.txt"), 'r') as f:
-    nmi = f.read().split(':')[-1].split('\n')[0]
-  with open(os.path.join(log_dir, "nmi_class.txt"), 'r') as f:
-    nmi_class = f.read().split(':')[-1].split('\n')[0]
-  nmi, nmi_class = round(float(nmi), 5), round(float(nmi_class), 5)
-
-  return nmi, nmi_class
 

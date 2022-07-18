@@ -113,7 +113,7 @@ def get_body_text(config, start_time, nmi, nmi_class):
     data_domain = '_'.join(config.dataset.target_dsets)
     
     mail_body_text = f"""
-    ==========  {data_domain}  {config.lap}周目  ==========
+    ==========  {data_domain}  {config.lap}/{config.num_laps}周目  ==========
         実行時間: {(time() - start_time)/60:.2f} 分
         nmi: {round(nmi, 5)},  nmi_class: {round(nmi_class, 5)},  
         ------------------------------------------------------------------------
