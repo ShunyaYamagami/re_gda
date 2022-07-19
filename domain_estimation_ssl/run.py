@@ -16,7 +16,7 @@ from log_functions import *
 
 
 parser = argparse.ArgumentParser(description='choose config')
-parser.add_argument('--config', type=str, default="./config/Office31/webcam_amazon.yaml")
+parser.add_argument('--config', type=str, default="./config/Office31/dw.yaml")
 parser.add_argument('--log_dir', type=str, default="record")  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 parser.add_argument('--num_laps', default=1)  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 parser.add_argument('--spread_message', type=str, default="")  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．

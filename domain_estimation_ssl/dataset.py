@@ -17,10 +17,10 @@ def second_load(fi, config, root, filename, resize, mix_filenames=None) -> Image
     grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
     if config.dataset.fourier:
         # im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 5, const_value=0)  # 位相・振幅に一定値を入れる．
+        # im = input_random_values(im, resize, randomize_abs=False, randomize_pha=True, n_random = resize[0] * resize[1] // 10)  # 位相・振幅にランダム値を入れる．
         # im = mix_amp_phase_and_mixup(im, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=True, LAMB = 0.7)
-        im = cutmix_spectrums(im, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=2 )
+        im = cutmix_spectrums(im, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=4 )
         # pass
-
     if config.dataset.jigsaw:
         im = get_jigsaw(im, resize, grid)
         # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
@@ -31,18 +31,20 @@ def second_load(fi, config, root, filename, resize, mix_filenames=None) -> Image
 
     
 def load(fi, config, root, filename, resize) -> Image:
-    im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
+    im1 = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
+    origin_im = im1
     grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
-    if config.dataset.fourier:
-        pass
-        # im = input_const_values(im, resize, const_abs=True, const_pha=False, n_random = resize[0] * resize[1] // 15, const_value=0 )  # 位相・振幅に一定値を入れる．
-        # im = input_random_values(im, resize, randomize_abs=False, randomize_pha=True, n_random = resize[0] * resize[1] // 10)  # 位相・振幅にランダム値を入れる．
-    if config.dataset.jigsaw:
-        # im = get_jigsaw(im, resize, grid)
-        # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
-        im = cutmix_self(im, resize, grid, n_cutmix=4)
 
-    return fi, im
+    if config.dataset.fourier:
+        im1 = input_const_values(im1, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+    #     im1 = input_random_values(im1, resize, randomize_abs=False, randomize_pha=True, n_random = resize[0] * resize[1] // 10)  # 位相・振幅にランダム値を入れる．
+    if config.dataset.jigsaw:
+        im1 = get_jigsaw(im1, resize, grid)
+        # im1 = mask_randomly(im1, resize, square_edge=20, rate=0.3)
+        # im1 = cutmix_self(im1, resize, grid, n_cutmix=4)
+
+    im2 = im1.copy()
+    return fi, im1, im2, origin_im
 
 
 class LabeledDataset(data.Dataset):
@@ -60,28 +62,34 @@ class LabeledDataset(data.Dataset):
         else:
             mix_filenames = get_mix_filenames(config, self.edls)
             self.processed = Parallel(n_jobs=4, verbose=1)([delayed(second_load)(fi, self.config, self.root, filename, resize, mix_filenames[edl]) for fi, (filename, edl) in enumerate(zip(filenames, self.edls))])
-
         self.processed.sort(key=lambda x: x[0])  # 順番を元データ順に (https://qiita.com/kaggle_grandmaster-arai-san/items/4276079bf5e16b7de7a7#%E8%A8%88%E7%AE%97%E9%A0%86%E5%BA%8F%E3%81%AE%E8%A9%B1)
-        self.imgs = [t[1] for t in self.processed]
+        self.imgs1 = [t[1] for t in self.processed]
+        self.imgs2 = [t[2] for t in self.processed]
+        self.origin_imgs = [t[3] for t in self.processed]
 
-        self.domain_labels = np.array([domain_label] * len(self.imgs), dtype=np.int)
+        self.domain_labels = np.array([domain_label] * len(self.imgs1), dtype=np.int)
 
 
     def __getitem__(self, index):
-        img = self.imgs[index]
+        img1 = self.imgs1[index]
+        img2 = self.imgs2[index]
+        origin_img = self.origin_imgs[index]
         
-        img1 = self.transform(img)
-        img2 = self.transform(img)
+        img1 = self.transform(img1)
+        img2 = self.transform(img2)
+        # img2 = self.transform(origin_img)
         edls = torch.tensor(self.edls[index], dtype=torch.int8) if self.edls else self.edls
         
         return img1, img2, edls
 
     def __len__(self):
-        return len(self.imgs)
+        return len(self.imgs1)
 
     def concat_dataset(self, dataset):
         assert self.root == dataset.root
-        self.imgs.extend(dataset.imgs)
+        self.imgs1.extend(dataset.imgs1)
+        self.imgs2.extend(dataset.imgs2)
+        self.origin_imgs.extend(dataset.origin_imgs)
         self.labels = np.concatenate([self.labels, dataset.labels])
         self.domain_labels = np.concatenate([self.domain_labels, dataset.domain_labels])
 
