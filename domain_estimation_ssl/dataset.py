@@ -42,7 +42,7 @@ class LabeledDataset(data.Dataset):
         self.labels = labels
         self.resize = resize
         self.transform = transform
-        self.edls = config.edls if 'edls' in config.keys() else None  # 引数をget_datasetsから変えるのめんどいから，configにedlsをつけるという暴挙に．
+        self.edls = list(config.edls) if 'edls' in config.keys() else []  # 引数をget_datasetsから変えるのめんどいから，configにedlsをつけるという暴挙に．
 
         if config.lap == 1:
             self.processed = Parallel(n_jobs=4, verbose=1)([delayed(load)(fi, self.config, self.root, filename, resize) for fi, filename in enumerate(filenames)])
@@ -62,8 +62,9 @@ class LabeledDataset(data.Dataset):
 
         img1 = self.transform(img)
         img2 = self.transform(img)
-
-        return img1, img2
+        edls = torch.tensor(self.edls[index], dtype=torch.int8) if self.edls else self.edls
+        
+        return img1, img2, edls
 
     def __len__(self):
         return len(self.imgs)

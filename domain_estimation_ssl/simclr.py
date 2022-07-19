@@ -39,7 +39,7 @@ class SimCLR(object):
         self.device = self._get_device()
         self.writer = SummaryWriter(log_dir=config.log_dir)
         self.dataset = dataset
-        self.nt_xent_criterion = NTXentLoss(self.device, config.batch_size, **config.loss)
+        self.nt_xent_criterion = NTXentLoss(config, self.device, config.batch_size, **config.loss)
 
 
     def _get_device(self):
@@ -48,7 +48,7 @@ class SimCLR(object):
         return device
 
 
-    def _simclr_step(self, model, xis, xjs):
+    def _simclr_step(self, model, xis, xjs, edls):
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
         rjs, zjs = model(xjs)  # [N,C]
@@ -56,11 +56,11 @@ class SimCLR(object):
         zis = F.normalize(zis, dim=1)
         zjs = F.normalize(zjs, dim=1)
 
-        loss = self.nt_xent_criterion(zis, zjs)
+        loss = self.nt_xent_criterion(zis, zjs, edls)
         return loss
 
 
-    def _simsiam_step(self, model, xis, xjs, criterion):
+    def _simsiam_step(self, model, xis, xjs, criterion, edls):
         # get the representations and the projections
         _, zis, pis = model(xis)  # [N,C]  ミニバッチなので負例も大量に含まれている.
         _, zjs, pjs = model(xjs)  # [N,C]
@@ -113,16 +113,15 @@ class SimCLR(object):
         best_valid_loss = np.inf
 
         for epoch_counter in range(self.config.epochs):
-            for xis, xjs in train_loader:
+            for xis, xjs, edls in train_loader:
                 optimizer.zero_grad()
 
-                xis = xis.to(self.device)
-                xjs = xjs.to(self.device)
+                xis, xjs = xis.cuda(), xjs.cuda()
 
                 if self.config.model.ssl == 'simclr':
-                    loss = self._simclr_step(model, xis, xjs)
+                    loss = self._simclr_step(model, xis, xjs, edls)
                 elif self.config.model.ssl == 'simsiam':
-                    loss = self._simsiam_step(model, xis, xjs, criterion)
+                    loss = self._simsiam_step(model, xis, xjs, criterion, edls)
 
                 if n_iter % self.config.log_every_n_steps == 0:
                     print(f'Epoch:{epoch_counter}/{self.config.epochs}({n_iter}) loss:{loss}')

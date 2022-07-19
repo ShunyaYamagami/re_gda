@@ -32,24 +32,25 @@ def main(args):
     config.spread_message = args.spread_message
     mail_body_texts = []
 
+    print(f"""    ---------------------------------------------------------
+        batch_size: {config.batch_size},  epochs: {config.epochs}
+        SSL: {config.model.ssl},  base_model: {config.model.base_model}
+        jigsaw: {config.dataset.jigsaw},  fourier: {config.dataset.fourier},  grid: {config.dataset.grid}
+        num_laps: {config.num_laps}
+    ---------------------------------------------------------
+    """)
+
     try:
-        print(f"""      ---------------------------------------------------------
-                batch_size: {config.batch_size},  epochs: {config.epochs}
-                SSL: {config.model.ssl},  base_model: {config.model.base_model}
-                jigsaw: {config.dataset.jigsaw},  fourier: {config.dataset.fourier},  grid: {config.dataset.grid}
-                num_laps: {config.num_laps}
-        ---------------------------------------------------------""")
+        # print(f"\n=================  1/{config.num_laps}周目  =================")
+        # config.lap = 1
+        # dataset = get_datasets(config, 'train')
+        # simclr = SimCLR(dataset, config)
+        # simclr.train()
 
-        print(f"\n=================  1/{config.num_laps}周目  =================")
-        config.lap = 1
-        dataset = get_datasets(config, 'train')
-        simclr = SimCLR(dataset, config)
-        simclr.train()
-
-        print(f"=================  Clustering 1/{config.num_laps}  =================")
-        feats, edls_dataset, nmi, nmi_class = run_clustering(config)
-        log_spread_sheet(config, nmi, nmi_class)
-        mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
+        # print(f"=================  Clustering 1/{config.num_laps}  =================")
+        # feats, edls_dataset, nmi, nmi_class = run_clustering(config)
+        # log_spread_sheet(config, nmi, nmi_class)
+        # mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
             
         for ilap in range(2, config.num_laps + 1):  # 何周するか
             config.lap = ilap
@@ -67,7 +68,6 @@ def main(args):
             log_spread_sheet(config, nmi, nmi_class)
             mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
     
-        print('send_email')
         send_email(not_error=True, body_texts='\n'.join(mail_body_texts), config=config, nmi=nmi, nmi_class=nmi_class)
     except:
         error_message = traceback.format_exc()

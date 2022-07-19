@@ -91,7 +91,7 @@ def run_clustering(config):
 
     feats = []
     with torch.no_grad():
-        for im, _ in dataloader:
+        for im, _, _ in dataloader:
             im = im.cuda()
             feat, _ = model(im)
             feats.append(feat.cpu().numpy())
