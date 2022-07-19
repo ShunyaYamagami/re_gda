@@ -4,7 +4,7 @@ import random
 from PIL import Image
 import cv2
 import pandas as pd
-
+import itertools
 
 def get_jigsaw(im:Image, resize, grid) -> Image:
     s = int(resize[0] / grid)
@@ -18,7 +18,7 @@ def get_jigsaw(im:Image, resize, grid) -> Image:
     return im
 
 
-def fft_spectrums(img):
+def fft_spectrums(img: np.array) -> np.array:
     img_fft = np.fft.fft2(img)
     img_abs = np.abs(img_fft)
     img_pha = np.angle(img_fft)
@@ -26,7 +26,8 @@ def fft_spectrums(img):
     img_pha = np.fft.fftshift(img_pha)
     return img_abs, img_pha
 
-def spectrums_ifft(img_abs, img_pha):
+
+def spectrums_ifft(img_abs: np.array, img_pha: np.array):
     img_abs = np.fft.ifftshift(img_abs)
     img_pha = np.fft.ifftshift(img_pha)
     img_ifft = img_abs * (np.e ** (1j * img_pha))
@@ -35,6 +36,8 @@ def spectrums_ifft(img_abs, img_pha):
     # img_ifft = np.uint8(np.array([[(f-fmin)/(fmax-fmin) for f in img] for img in img_ifft])*255)  # minmax
     img_ifft = np.uint8(np.clip(img_ifft, 0, 255))  # clip
     return img_ifft
+
+
 
 
 ### 位相・振幅に一定値を入れてクラス情報を壊すことを試みる
@@ -76,6 +79,52 @@ def input_const_values(im:Image, resize, const_abs=True, const_pha=False, n_rand
 
 
 
+
+### 位相・振幅にランダムな値を入れる．
+# 位相・振幅に，フーリエ変換直後と同じ平均・分散を持つ正規分布に慕う乱数を代入してクラス情報を破壊する事を試みる.
+def input_random_values(im:Image, resize, randomize_abs=True, randomize_pha=False, n_random=0) -> Image:
+    """
+        input: 
+            im: データ拡張対象の画像 (C, W, H)
+            randomize_abs, randomize_pha: abs/pha にランダムな値を入れるか否か
+                    randomize_abs=True, randomize_pha=False  ->  推奨
+                    randomize_abs=False, randomize_pha=True  ->  画像真っ黒になる
+                    randomize_abs=True, randomize_pha=True   ->  ERROR
+            n_random: ランダムな値を入れるpixel数
+        return:
+            フーリエ変換してデータ拡張処理し, 逆フーリエ変換して戻した画像.(W, H, C)
+    """
+    fourier_img = []
+    # フーリエ変換は各チャンネルごとに独立して行う
+    im = np.array(im).transpose(2, 0, 1)  # to (C, W, H)
+    for img in im:
+        img_abs, img_pha = fft_spectrums(img)
+
+        ### random amp,pha following normal distribution
+        if randomize_abs:
+            mean, std = img_abs.mean(), img_abs.std()
+            normals = np.random.normal(mean, std, size=n_random)  # 同じ平均・標準偏差の正規分布に従う乱数をn_random個作成
+            noize_pixels = [(random.randint(0, resize[0]-1), random.randint(0, resize[0]-1)) for i in range(n_random)]  # ランダムな値を入れるピクセル(x, y)
+            for (noize_pixel, normal) in zip(noize_pixels, normals):
+                img_abs[noize_pixel] = normal
+        if randomize_pha:
+            mean, std = img_pha.mean(), img_pha.std()
+            normals = np.random.normal(mean, std, size=n_random)  # 同じ平均・標準偏差の正規分布に従う乱数をn_random個作成
+            noize_pixels = [(random.randint(0, resize[0]-1), random.randint(0, resize[0]-1)) for i in range(n_random)]  # ランダムな値を入れるピクセル(x, y)
+            for (noize_pixel, normal) in zip(noize_pixels, normals):
+                img_pha[noize_pixel] = normal
+
+        img_ifft = spectrums_ifft(img_abs, img_pha)
+        fourier_img.append(img_ifft)
+
+    fourier_img = np.array(fourier_img).transpose(1, 2, 0) # to (W, H, C)
+    im = Image.fromarray(fourier_img)
+
+    return im
+
+
+
+
 def get_mix_filenames(config, edls):
     root = os.path.join("/nas/data/syamagami/GDA/data/", config.dataset.parent)
     target_text_trains = [os.path.join(root, f"{each_dset_name}.txt") for each_dset_name in config.dataset.target_dsets]  # mix用.mixするにはdslr_webcamだったら2つのdsetのfilenameを一遍に取得しなくてはならない
@@ -91,6 +140,7 @@ def get_mix_filenames(config, edls):
 
     return mix_filenames
     
+
 
 def mix_amp_phase_and_mixup(im: Image, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=True, LAMB = 0.7) -> Image:
     """ ランダムな他2つの画像と位相/振幅をMixし, その後ピクセル空間でMixUp
@@ -152,3 +202,84 @@ def mix_amp_phase_and_mixup(im: Image, root, resize, mix_filenames, mix_amp=True
     im = Image.fromarray(fourier_img)
 
     return im
+
+
+
+def mask_randomly(im:Image, resize=(32,32), square_edge=20, rate=0.5) -> Image:
+    """ ランダムにマスクする """
+    num_per_edge = resize[0]//square_edge + 1
+    
+    all_position_pairs = [pair for pair in itertools.product(list(range(num_per_edge)), list(range(num_per_edge)))]
+    mask_positions = random.sample(all_position_pairs, int(num_per_edge*num_per_edge*rate))
+    mask = Image.new("L", (square_edge, square_edge), 128)
+    for x, y in mask_positions:
+        im.paste(mask, (x*square_edge, y*square_edge))
+
+    return im
+
+
+
+def cutmix_self(im:Image, resize, grid=3, n_cutmix=2) -> Image:
+    """ 1つの画像内でcropして貼り付けする """
+    s = int(resize[0] / grid)
+    tile = [im.crop(np.array([s * (n % grid), s * int(n / grid), s * (n % grid + 1), s * (int(n / grid) + 1)]).astype(int)) for n in range(grid**2)]
+    random.shuffle(tile)
+
+    for n in range(n_cutmix):
+        pos = random.sample(range(resize[0]-s), 2)
+        im.paste(tile[n], (pos[0], pos[1]))
+
+    return im
+
+
+
+def cutmix_other(im:Image, resize, root, mix_filenames, mix_edge_div=5, crop_part='center'):
+    """ 他の画像と中心部分をcutmixする. """
+    mix_im = Image.open(os.path.join(root, random.choice(mix_filenames))).convert("RGB").resize(resize)
+    mix_edge = resize[0] // mix_edge_div
+    pos_lu = resize[0]//2 - mix_edge
+    pos_rb = resize[0]//2 + mix_edge
+    
+    if crop_part == 'center':
+        crop_im = mix_im.crop((pos_lu, pos_lu, pos_rb, pos_rb))
+    elif crop_part == 'left_upper':
+        crop_im = mix_im.crop((0, 0, 2*mix_edge, 2*mix_edge))  # 他の画像の左上の部分を元画像の中心に貼り付け.
+
+    im.paste(crop_im, (pos_lu, pos_lu))
+
+    return im
+
+
+
+
+def cutmix_spectrums(im:Image, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=2):
+    """ 他の画像と振幅/位相のスペクトルをcutmixする. """
+    square = resize[0] // mix_edge_div
+    lt, rb = resize[0] - square, resize[0] + square
+
+    mix_im = Image.open(os.path.join(root, random.choice(mix_filenames))).convert("RGB").resize(resize)
+    im = np.array(im).transpose(2, 0, 1)
+    mix_im = np.array(mix_im).transpose(2, 0, 1)
+
+    fourier_img = []
+    for img, mix_img in zip(im, mix_im):
+        amp, pha = fft_spectrums(img)
+        mixed_amp, mixed_pha = fft_spectrums(mix_img)
+
+        if does_mix_amp:
+            amp[lt:rb, lt:rb] = mixed_amp[lt:rb, lt:rb]
+        if does_mix_pha:
+            pha[lt:rb, lt:rb] = mixed_pha[lt:rb, lt:rb]
+
+        # Image.fromarray(np.uint8(np.clip(20*np.log(amp), 0, 255)))
+        imifft = spectrums_ifft(amp, pha)
+        fimg = np.uint8(np.clip(imifft, 0, 255))
+        fourier_img.append(fimg)
+
+    fourier_img = np.array(fourier_img).transpose(1, 2, 0) # to (W, H, C)
+    im = Image.fromarray(fourier_img)
+    return im
+
+
+
+

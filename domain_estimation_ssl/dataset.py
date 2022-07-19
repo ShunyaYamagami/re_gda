@@ -12,30 +12,41 @@ from data_aug.gaussian_blur import GaussianBlur
 from functions import *
 
 
-def second_load(fi, config, root, filename, resize=(32, 32)) -> Image:
+def second_load(fi, config, root, filename, resize, mix_filenames=None) -> Image:
     im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
     grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
     if config.dataset.fourier:
-        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 5, const_value=0)  # 位相・振幅に一定値を入れる．
+        # im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 5, const_value=0)  # 位相・振幅に一定値を入れる．
+        # im = mix_amp_phase_and_mixup(im, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=True, LAMB = 0.7)
+        im = cutmix_spectrums(im, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=2 )
+        # pass
+
     if config.dataset.jigsaw:
         im = get_jigsaw(im, resize, grid)
+        # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+        # im = cutmix_self(im, resize, grid, n_cutmix=4)
+        # im = cutmix_other(im, resize, root, mix_filenames, mix_edge_div=5, crop_part='center')
 
     return fi, im
 
     
-def load(fi, config, root, filename, resize=(32, 32)) -> Image:
+def load(fi, config, root, filename, resize) -> Image:
     im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
     grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
     if config.dataset.fourier:
-        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 5, const_value=0)  # 位相・振幅に一定値を入れる．
+        pass
+        # im = input_const_values(im, resize, const_abs=True, const_pha=False, n_random = resize[0] * resize[1] // 15, const_value=0 )  # 位相・振幅に一定値を入れる．
+        # im = input_random_values(im, resize, randomize_abs=False, randomize_pha=True, n_random = resize[0] * resize[1] // 10)  # 位相・振幅にランダム値を入れる．
     if config.dataset.jigsaw:
-        im = get_jigsaw(im, resize, grid)
+        # im = get_jigsaw(im, resize, grid)
+        # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+        im = cutmix_self(im, resize, grid, n_cutmix=4)
 
     return fi, im
 
 
 class LabeledDataset(data.Dataset):
-    def __init__(self, config, img_root, filenames, labels, domain_label, resize=(32, 32), transform=None, target_all_filenames=None):
+    def __init__(self, config, img_root, filenames, labels, domain_label, resize, transform=None, target_all_filenames=None):
         self.config = config
         self.root = img_root
         self.filenames = filenames
@@ -47,9 +58,8 @@ class LabeledDataset(data.Dataset):
         if config.lap == 1:
             self.processed = Parallel(n_jobs=4, verbose=1)([delayed(load)(fi, self.config, self.root, filename, resize) for fi, filename in enumerate(filenames)])
         else:
-            # mix_filenames = get_mix_filenames(config, self.edls)
-            # self.processed = Parallel(n_jobs=4, verbose=1)([delayed(second_load)(fi, self.config, self.root, filename, resize, mix_filenames[edl]) for fi, (filename, edl) in enumerate(zip(filenames, self.edls))])
-            self.processed = Parallel(n_jobs=4, verbose=1)([delayed(second_load)(fi, self.config, self.root, filename, resize) for fi, filename in enumerate(filenames)])
+            mix_filenames = get_mix_filenames(config, self.edls)
+            self.processed = Parallel(n_jobs=4, verbose=1)([delayed(second_load)(fi, self.config, self.root, filename, resize, mix_filenames[edl]) for fi, (filename, edl) in enumerate(zip(filenames, self.edls))])
 
         self.processed.sort(key=lambda x: x[0])  # 順番を元データ順に (https://qiita.com/kaggle_grandmaster-arai-san/items/4276079bf5e16b7de7a7#%E8%A8%88%E7%AE%97%E9%A0%86%E5%BA%8F%E3%81%AE%E8%A9%B1)
         self.imgs = [t[1] for t in self.processed]
@@ -59,7 +69,7 @@ class LabeledDataset(data.Dataset):
 
     def __getitem__(self, index):
         img = self.imgs[index]
-
+        
         img1 = self.transform(img)
         img2 = self.transform(img)
         edls = torch.tensor(self.edls[index], dtype=torch.int8) if self.edls else self.edls
@@ -145,6 +155,7 @@ def get_dataset(config, dset_taple, domain_label, transform=None):
             resize=(228,228)
         else:
             resize=(255,255)
+    config.resize = resize
 
     df = pd.read_csv(text_train, sep=" ", names=("filename", "label"))
     filenames = df.filename.values

@@ -41,16 +41,16 @@ def main(args):
     """)
 
     try:
-        # print(f"\n=================  1/{config.num_laps}周目  =================")
-        # config.lap = 1
-        # dataset = get_datasets(config, 'train')
-        # simclr = SimCLR(dataset, config)
-        # simclr.train()
+        print(f"\n=================  1/{config.num_laps}周目  =================")
+        config.lap = 1
+        dataset = get_datasets(config, 'train')
+        simclr = SimCLR(dataset, config)
+        simclr.train()
 
-        # print(f"=================  Clustering 1/{config.num_laps}  =================")
-        # feats, edls_dataset, nmi, nmi_class = run_clustering(config)
-        # log_spread_sheet(config, nmi, nmi_class)
-        # mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
+        print(f"=================  Clustering 1/{config.num_laps}  =================")
+        feats, edls_dataset, nmi, nmi_class = run_clustering(config)
+        log_spread_sheet(config, nmi, nmi_class)
+        mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
             
         for ilap in range(2, config.num_laps + 1):  # 何周するか
             config.lap = ilap
