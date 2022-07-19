@@ -54,10 +54,9 @@ class NTXentLoss(nn.Module):
 
     def forward(self, zis, zjs, edls):
         """ 最初にバッチ内の全ての組合せの類似度行列を作り,正例か負例かでフィルタケ掛けてInfoNCEを計算する. """
-        representations = torch.cat([zjs, zis], dim=0)  # 縦に結合.([2*batch_size, channel])
+        representations = torch.cat([zjs, zis], dim=0)  # 縦に結合
         similarity_matrix = self.similarity_function(representations, representations)  # 類似度行列の作成
         
-        # # filter out the scores from the positive/negative pairs
         # # 類似度行列からpositive/negativeの要素を取り出す.
         positives = similarity_matrix[self._get_pos_neg_masks(edls, positive=True)].view(self.batch_size, -1)  # 1次元化したものをviewで
 
@@ -68,7 +67,7 @@ class NTXentLoss(nn.Module):
             similarity_matrix_tmp = similarity_matrix
             edl_indexes = [[i for i, x in enumerate(edls) if x == d] for d in np.unique(edls)][0]
             for edl_index in edl_indexes:
-                similarity_matrix_tmp[edl_index] *= 0
+                similarity_matrix_tmp[edl_index] *= 0    # 同推定ドメインの負例に定数掛けて影響度を抑える.
             negatives = similarity_matrix_tmp[self._get_pos_neg_masks(edls, positive=False)].view(self.batch_size, -1)
 
         logits = torch.cat((positives, negatives), dim=1)  # 横に結合.
