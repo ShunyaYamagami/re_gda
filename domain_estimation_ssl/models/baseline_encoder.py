@@ -44,6 +44,12 @@ class Encoder(nn.Module):
             nn.Linear(pred_dim, out_dim) # output layer
         )
 
+        random_pseudo = nn.Sequential(
+            nn.Linear(64, 32),
+            nn.BatchNorm1d(32),
+            nn.Sigmoid(),
+        )
+
 
     def forward(self, x):
         x = self.encorder(x)
@@ -55,3 +61,5 @@ class Encoder(nn.Module):
         elif self.ssl == 'simsiam':
             p = self.predictor(z)
             return h, z, p
+        elif self.ssl == 'random_pseudo':
+            random_pseudo = random_pseudo(h)

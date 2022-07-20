@@ -20,7 +20,8 @@ model:
   # base_model: "resnet18"
   # base_model: "resnet50"
   imsize: 32
-  ssl: 'simclr'
+  # ssl: 'simclr'
+  ssl: 'random_pseudo'
 loss:
   temperature: 0.5
   use_cosine_similarity: True

@@ -30,11 +30,11 @@ def second_load(fi, config, root, filename, resize, mix_filenames=None) -> Image
         im = get_jigsaw(im, resize, grid)
         im = mask_randomly(im, resize, square_edge=20, rate=0.3)
     elif config.cuda_dir == 1:
-        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = mix_amp_phase_and_mixup(im, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=True, LAMB = 0.7)
         im = get_jigsaw(im, resize, grid)
     elif config.cuda_dir == 2:
+        im = mix_amp_phase_and_mixup(im, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=False, LAMB = 0.7)
         im = get_jigsaw(im, resize, grid)
-        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
     elif config.cuda_dir == 3:
         im = get_jigsaw(im, resize, grid)
     else:
@@ -58,13 +58,14 @@ def load(fi, config, root, filename, resize) -> Image:
     if config.cuda_dir == 0:
         im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
         im = get_jigsaw(im, resize, grid)
-        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+        # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
     elif config.cuda_dir == 1:
         im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
         im = get_jigsaw(im, resize, grid)
     elif config.cuda_dir == 2:
-        im = get_jigsaw(im, resize, grid)
-        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        # im = get_jigsaw(im, resize, grid)
+        # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
     elif config.cuda_dir == 3:
         im = get_jigsaw(im, resize, grid)
     else:

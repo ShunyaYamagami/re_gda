@@ -46,9 +46,9 @@ def main(args):
     try:
         print(f"\n=================  1/{config.num_laps}周目  =================")
         config.lap = 1
-        dataset = get_datasets(config, 'train')
-        simclr = SimCLR(dataset, config)
-        simclr.train()
+        # dataset = get_datasets(config, 'train')
+        # simclr = SimCLR(dataset, config)
+        # simclr.train()
 
         print(f"=================  Clustering 1/{config.num_laps}  =================")
         feats, edls_dataset, nmi, nmi_class = run_clustering(config)
