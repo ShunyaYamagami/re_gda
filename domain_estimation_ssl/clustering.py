@@ -11,6 +11,7 @@ from sklearn.manifold import TSNE
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture as GMM
 from sklearn.metrics import normalized_mutual_info_score as NMI
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 
 from dataset import get_datasets
@@ -54,13 +55,21 @@ def clustering_exec(config, feats, dim_red_method, clust_method, dataset, log_di
     if nmi_output:
         nmi = NMI(dataset.domain_labels, domain_cluster)
         nmi_class = NMI(dataset.labels, class_cluster)
+        domain_accuracy = accuracy_score(dataset.domain_labels, domain_cluster)
+        classs_accuracy = accuracy_score(dataset.labels, class_cluster)
         with open(os.path.join(log_dir, "nmi.txt"), 'w') as f:
             f.write(f'nmi:{nmi}\n')
         with open(os.path.join(log_dir, "nmi_class.txt"), "w") as f:
             f.write(f'nmi_class:{nmi_class}\n')
+        with open(os.path.join(log_dir, "domain_accuracy.txt"), "w") as f:
+            f.write(f'domain_accuracy:{nmi_class}\n')
+        with open(os.path.join(log_dir, "classs_accuracy.txt"), "w") as f:
+            f.write(f'classs_accuracy:{nmi_class}\n')
         print(f"  -----  Load NMI File from {log_dir}  -----")
         print(f'nmi:{nmi}')
         print(f'nmi class:{nmi_class}')
+        print(f'domain_accuracy:{domain_accuracy}')
+        print(f'classs_accuracy:{classs_accuracy}')
 
     dataset.edls = domain_cluster
     return dataset, nmi, nmi_class

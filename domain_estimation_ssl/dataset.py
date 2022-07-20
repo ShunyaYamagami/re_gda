@@ -15,17 +15,32 @@ from functions import *
 def second_load(fi, config, root, filename, resize, mix_filenames=None) -> Image:
     im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
     grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
-    if config.dataset.fourier:
+    # if config.dataset.fourier:
         # im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 5, const_value=0)  # 位相・振幅に一定値を入れる．
         # im = mix_amp_phase_and_mixup(im, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=True, LAMB = 0.7)
-        im = cutmix_spectrums(im, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=2 )
-        # pass
+        # im = cutmix_spectrums(im, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=2 )
 
-    if config.dataset.jigsaw:
-        im = get_jigsaw(im, resize, grid)
+    # if config.dataset.jigsaw:
+    #     im = get_jigsaw(im, resize, grid)
         # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
         # im = cutmix_self(im, resize, grid, n_cutmix=4)
         # im = cutmix_other(im, resize, root, mix_filenames, mix_edge_div=5, crop_part='center')
+    if config.cuda_dir == 0:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 1:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = get_jigsaw(im, resize, grid)
+    elif config.cuda_dir == 2:
+        im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 3:
+        im = get_jigsaw(im, resize, grid)
+    else:
+        print("cuda未選択")
+        raise ValueError("cudaが未選択")
+
 
     return fi, im
 
@@ -33,14 +48,29 @@ def second_load(fi, config, root, filename, resize, mix_filenames=None) -> Image
 def load(fi, config, root, filename, resize) -> Image:
     im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
     grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
-    if config.dataset.fourier:
-        pass
+    # if config.dataset.fourier:
         # im = input_const_values(im, resize, const_abs=True, const_pha=False, n_random = resize[0] * resize[1] // 15, const_value=0 )  # 位相・振幅に一定値を入れる．
         # im = input_random_values(im, resize, randomize_abs=False, randomize_pha=True, n_random = resize[0] * resize[1] // 10)  # 位相・振幅にランダム値を入れる．
-    if config.dataset.jigsaw:
+    # if config.dataset.jigsaw:
         # im = get_jigsaw(im, resize, grid)
         # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
-        im = cutmix_self(im, resize, grid, n_cutmix=4)
+        # im = cutmix_self(im, resize, grid, n_cutmix=4)
+    if config.cuda_dir == 0:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 1:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = get_jigsaw(im, resize, grid)
+    elif config.cuda_dir == 2:
+        im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 3:
+        im = get_jigsaw(im, resize, grid)
+    else:
+        print("cuda未選択")
+        raise ValueError("cudaが未選択")
+
 
     return fi, im
 
