@@ -60,7 +60,7 @@ class NTXentLoss(nn.Module):
         # # 類似度行列からpositive/negativeの要素を取り出す.
         positives = similarity_matrix[self._get_pos_neg_masks(edls, positive=True)].view(self.batch_size, -1)  # 1次元化したものをviewで
 
-        if len(edls) == 0:
+        if self.config.lap <= 1:
             negatives = similarity_matrix[self._get_pos_neg_masks(edls, positive=False)].view(self.batch_size, -1)
         else:
             # edlsに対応する負例の影響度をさげておく
