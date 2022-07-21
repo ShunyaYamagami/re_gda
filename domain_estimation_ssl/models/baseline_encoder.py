@@ -4,7 +4,7 @@ from models.grl import ReverseLayerF
 
 
 class Encoder(nn.Module):
-    def __init__(self, ssl='simclr', input_dim=1, out_dim=64, pred_dim=128):
+    def __init__(self, ssl='simclr', input_dim=1, out_dim=64, pred_dim=128, pseudo_out_dim=8):
         super().__init__()
         self.ssl = ssl
         self.input_dim = input_dim
@@ -44,9 +44,9 @@ class Encoder(nn.Module):
             nn.Linear(pred_dim, out_dim) # output layer
         )
 
-        random_pseudo = nn.Sequential(
-            nn.Linear(64, 32),
-            nn.BatchNorm1d(32),
+        self.sig_pseudo = nn.Sequential(
+            nn.Linear(64, pseudo_out_dim),
+            nn.BatchNorm1d(pseudo_out_dim),
             nn.Sigmoid(),
         )
 
@@ -62,4 +62,8 @@ class Encoder(nn.Module):
             p = self.predictor(z)
             return h, z, p
         elif self.ssl == 'random_pseudo':
-            random_pseudo = random_pseudo(h)
+            sig_pseudo = self.sig_pseudo(h)
+            return sig_pseudo
+        else:
+            print("ssl設定ミス")
+            raise ValueError("ssl設定ミス")

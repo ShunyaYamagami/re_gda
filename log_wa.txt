@@ -1,0 +1,389 @@
+順番注意
+    if config.cuda_dir == 0:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 1:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 2:
+        im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 3:
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 4:
+        im = get_jigsaw(im, resize, grid)
+    elif config.cuda_dir == 5:
+        pass
+    elif config.cuda_dir == 6:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = get_jigsaw(im, resize, grid)
+
+
+
+===============================================
+==============  webcam_amazon  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 5
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA5/wa_encoder__3
+    ---------------------------------------------------------
+nmi:0.2625032235204702
+nmi class:0.22332755240272423
+domain_accuracy:0.6926910299003323
+  -----  Load Model from record/Office31/CUDA5/wa_encoder__3 for clustering  -----
+nmi:0.2625032235204702
+nmi class:0.2284936698150095
+domain_accuracy:0.6926910299003323
+  -----  Load Model from record/Office31/CUDA5/wa_encoder__3 for clustering  -----
+nmi:0.2625032235204702
+nmi class:0.2231562176185721
+domain_accuracy:0.6926910299003322
+===============================================
+nmi:0.26730124892547824
+nmi class:0.22687559101165486
+domain_accuracy:0.6982281284606866
+  -----  Load Model from record/Office31/CUDA5/wa_encoder__4 for clustering  -----
+nmi:0.26730124892547824
+nmi class:0.21622772004430924
+domain_accuracy:0.6982281284606866
+  -----  Load Model from record/Office31/CUDA5/wa_encoder__4 for clustering  -----
+nmi:0.26730124892547824
+nmi class:0.21904033206547083
+domain_accuracy:0.6982281284606866
+===============================================
+nmi:0.25663368466140407
+nmi class:0.22032746126237504
+domain_accuracy:0.6857696566998892
+  -----  Load Model from record/Office31/CUDA5/wa_encoder__5 for clustering  -----
+nmi:0.25663368466140407
+nmi class:0.2267747553426925
+domain_accuracy:0.6857696566998892
+  -----  Load Model from record/Office31/CUDA5/wa_encoder__5 for clustering  -----
+nmi:0.25663368466140407
+nmi class:0.2303909705969086
+domain_accuracy:0.6857696566998892
+CPU times: user 28.4 s, sys: 2.73 s, total: 31.1 s
+Wall time: 1h 14min 58s
+
+
+
+
+
+===============================================
+==============  webcam_amazon  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 4
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA4/wa_encoder__6
+    ---------------------------------------------------------
+nmi:0.5093879081948306
+nmi class:0.19483673274886787
+domain_accuracy:0.8726467331118494
+  -----  Load Model from record/Office31/CUDA4/wa_encoder__6 for clustering  -----
+nmi:0.4342053768387867
+nmi class:0.1842328041889806
+domain_accuracy:0.829734219269103
+  -----  Load Model from record/Office31/CUDA4/wa_encoder__6 for clustering  -----
+nmi:0.421613183399988
+nmi class:0.18514570892101168
+domain_accuracy:0.8214285714285714
+===============================================
+nmi:0.5435920638650907
+nmi class:0.18048921905244522
+domain_accuracy:0.8889811738648948
+  -----  Load Model from record/Office31/CUDA4/wa_encoder__7 for clustering  -----
+nmi:0.5670539497878039
+nmi class:0.17946545361853775
+domain_accuracy:0.8992248062015504
+  -----  Load Model from record/Office31/CUDA4/wa_encoder__7 for clustering  -----
+nmi:0.5670539497878039
+nmi class:0.17807630300293878
+domain_accuracy:0.8992248062015504
+===============================================
+nmi:0.17553133610621888
+nmi class:0.19416651883561728
+domain_accuracy:0.6990586932447398
+  -----  Load Model from record/Office31/CUDA4/wa_encoder__8 for clustering  -----
+nmi:0.21047826703442724
+nmi class:0.19110792488472
+domain_accuracy:0.6223698781838317
+  -----  Load Model from record/Office31/CUDA4/wa_encoder__8 for clustering  -----
+nmi:0.17442323180461683
+nmi class:0.19340070103259274
+domain_accuracy:0.6060354374307863
+CPU times: user 28 s, sys: 2.77 s, total: 30.8 s
+Wall time: 1h 13min 59s
+
+
+
+
+
+===============================================
+==============  webcam_amazon  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 3
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA3/wa_encoder__2
+    ---------------------------------------------------------
+nmi:0.2775029776262686
+nmi class:0.18182027144915058
+domain_accuracy:0.6971207087486158
+  -----  Load Model from record/Office31/CUDA3/wa_encoder__2 for clustering  -----
+nmi:0.29773917726324906
+nmi class:0.18457350171821182
+domain_accuracy:0.7245293466223699
+  -----  Load Model from record/Office31/CUDA3/wa_encoder__2 for clustering  -----
+nmi:0.30063275637808035
+nmi class:0.1889386699036646
+domain_accuracy:0.7250830564784053
+===============================================
+nmi:0.3134458028355065
+nmi class:0.19887717219741868
+domain_accuracy:0.7403100775193798
+  -----  Load Model from record/Office31/CUDA3/wa_encoder__3 for clustering  -----
+nmi:0.2810458870396287
+nmi class:0.20348198745262275
+domain_accuracy:0.7040420819490587
+  -----  Load Model from record/Office31/CUDA3/wa_encoder__3 for clustering  -----
+nmi:0.2706057570682097
+nmi class:0.2028965733146467
+domain_accuracy:0.6921373200442968
+===============================================
+nmi:0.2842707154987051
+nmi class:0.18945808867957856
+domain_accuracy:0.7148394241417497
+  -----  Load Model from record/Office31/CUDA3/wa_encoder__4 for clustering  -----
+nmi:0.2830293057302066
+nmi class:0.19206879474496102
+domain_accuracy:0.7112403100775194
+  -----  Load Model from record/Office31/CUDA3/wa_encoder__4 for clustering  -----
+nmi:0.2892134138030071
+nmi class:0.18965496171654092
+domain_accuracy:0.7297895902547065
+CPU times: user 17.2 s, sys: 1.66 s, total: 18.9 s
+Wall time: 45min 48s
+
+
+
+
+
+
+===============================================
+==============  webcam_amazon  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 2
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA2/wa_encoder__3
+    ---------------------------------------------------------
+nmi:0.23072131194571316
+nmi class:0.17627985381440595
+domain_accuracy:0.7464008859357697
+  -----  Load Model from record/Office31/CUDA2/wa_encoder__3 for clustering  -----
+nmi:0.23386811135336216
+nmi class:0.18365262051250805
+domain_accuracy:0.7477851605758582
+  -----  Load Model from record/Office31/CUDA2/wa_encoder__3 for clustering  -----
+nmi:0.23591488694334586
+nmi class:0.17885737445472502
+domain_accuracy:0.748062015503876
+===============================================
+nmi:0.3552597088333463
+nmi class:0.1733144252781225
+domain_accuracy:0.7931893687707641
+  -----  Load Model from record/Office31/CUDA2/wa_encoder__4 for clustering  -----
+nmi:0.34884950417592586
+nmi class:0.17520894950053004
+domain_accuracy:0.7868217054263565
+  -----  Load Model from record/Office31/CUDA2/wa_encoder__4 for clustering  -----
+nmi:0.3547640227941114
+nmi class:0.17322593364144778
+domain_accuracy:0.787375415282392
+===============================================
+nmi:0.366838171419937
+nmi class:0.17315042800274408
+domain_accuracy:0.7873754152823921
+  -----  Load Model from record/Office31/CUDA2/wa_encoder__5 for clustering  -----
+nmi:0.2785351832208633
+nmi class:0.17704783168955818
+domain_accuracy:0.7403100775193798
+  -----  Load Model from record/Office31/CUDA2/wa_encoder__5 for clustering  -----
+nmi:0.3443408367018446
+nmi class:0.1782986234369922
+domain_accuracy:0.7724252491694352
+CPU times: user 27.8 s, sys: 2.85 s, total: 30.6 s
+Wall time: 1h 14min 1s
+
+
+
+
+
+
+===============================================
+==============  webcam_amazon  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 1
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA1/wa_encoder__3
+    ---------------------------------------------------------
+nmi:0.0025724560927582476
+nmi class:0.18235215142301037
+domain_accuracy:0.5213178294573644
+  -----  Load Model from record/Office31/CUDA1/wa_encoder__3 for clustering  -----
+nmi:0.0012542446020386865
+nmi class:0.18358854324547977
+domain_accuracy:0.5254706533776301
+  -----  Load Model from record/Office31/CUDA1/wa_encoder__3 for clustering  -----
+nmi:0.01541301498316507
+nmi class:0.1920129186004005
+domain_accuracy:0.5160575858250277
+===============================================
+nmi:0.26951742142838064
+nmi class:0.18418798625836386
+domain_accuracy:0.7270210409745294
+  -----  Load Model from record/Office31/CUDA1/wa_encoder__4 for clustering  -----
+nmi:0.28759981693875586
+nmi class:0.17936956551683553
+domain_accuracy:0.7477851605758582
+  -----  Load Model from record/Office31/CUDA1/wa_encoder__4 for clustering  -----
+nmi:0.23910454317555832
+nmi class:0.17451949832657757
+domain_accuracy:0.7148394241417497
+===============================================
+nmi:0.25131314198286603
+nmi class:0.17731630970447332
+domain_accuracy:0.7162236987818383
+  -----  Load Model from record/Office31/CUDA1/wa_encoder__5 for clustering  -----
+nmi:0.2843690545343797
+nmi class:0.1867016176657857
+domain_accuracy:0.7405869324473975
+  -----  Load Model from record/Office31/CUDA1/wa_encoder__5 for clustering  -----
+nmi:0.29677787411393924
+nmi class:0.1854468932356316
+domain_accuracy:0.7624584717607974
+CPU times: user 43.2 s, sys: 4.12 s, total: 47.3 s
+Wall time: 1h 55min 40s
+
+
+
+
+
+===============================================
+==============  webcam_amazon  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 0
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA0/wa_encoder__3
+    ---------------------------------------------------------
+nmi:0.05196733816348431
+nmi class:0.16178057152571781
+domain_accuracy:0.6243078626799557
+  -----  Load Model from record/Office31/CUDA0/wa_encoder__3 for clustering  -----
+nmi:0.3972457797835021
+nmi class:0.16486975108691262
+domain_accuracy:0.8784606866002215
+  -----  Load Model from record/Office31/CUDA0/wa_encoder__3 for clustering  -----
+nmi:0.4498828125977936
+nmi class:0.1599091287948097
+domain_accuracy:0.897563676633444
+===============================================
+nmi:0.2671577328415768
+nmi class:0.1687418878565678
+domain_accuracy:0.7931893687707641
+  -----  Load Model from record/Office31/CUDA0/wa_encoder__4 for clustering  -----
+nmi:0.29308761847597387
+nmi class:0.16647318592223814
+domain_accuracy:0.8073089700996677
+  -----  Load Model from record/Office31/CUDA0/wa_encoder__4 for clustering  -----
+nmi:0.2336134504037732
+nmi class:0.17189478583458792
+domain_accuracy:0.6852159468438538
+===============================================
+nmi:0.1401595787502885
+nmi class:0.1614498534719281
+domain_accuracy:0.6782945736434108
+  -----  Load Model from record/Office31/CUDA0/wa_encoder__5 for clustering  -----
+nmi:0.10644136051121196
+nmi class:0.1680211651659249
+domain_accuracy:0.668327796234773
+  -----  Load Model from record/Office31/CUDA0/wa_encoder__5 for clustering  -----
+nmi:0.49351876823418966
+nmi class:0.1668637397252167
+domain_accuracy:0.9122369878183831
+CPU times: user 42.4 s, sys: 4.35 s, total: 46.7 s
+Wall time: 1h 55min 23s
+
+
+
+
+
+===============================================
+==============  webcam_amazon  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 6
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA6/wa_encoder__3
+    ---------------------------------------------------------
+nmi:0.4491745820576945
+nmi class:0.21081739131583999
+domain_accuracy:0.8803986710963455
+  -----  Load Model from record/Office31/CUDA6/wa_encoder__3 for clustering  -----
+nmi:0.43955534716484707
+nmi class:0.20755355181272267
+domain_accuracy:0.8790143964562569
+  -----  Load Model from record/Office31/CUDA6/wa_encoder__3 for clustering  -----
+nmi:0.44206115916626426
+nmi class:0.20004095365481994
+domain_accuracy:0.8770764119601329
+===============================================
+nmi:0.5127934865359027
+nmi class:0.19542452287798226
+domain_accuracy:0.8959025470653378
+  -----  Load Model from record/Office31/CUDA6/wa_encoder__4 for clustering  -----
+nmi:0.5327862170344664
+nmi class:0.19515671192135434
+domain_accuracy:0.9080841638981174
+  -----  Load Model from record/Office31/CUDA6/wa_encoder__4 for clustering  -----
+nmi:0.13608651847140796
+nmi class:0.19161377028961696
+domain_accuracy:0.6877076411960132
+===============================================
+nmi:0.5357642541747709
+nmi class:0.19167531983906774
+domain_accuracy:0.907530454042082
+  -----  Load Model from record/Office31/CUDA6/wa_encoder__5 for clustering  -----
+nmi:0.5318139320002725
+nmi class:0.1946811813483804
+domain_accuracy:0.9089147286821705
+  -----  Load Model from record/Office31/CUDA6/wa_encoder__5 for clustering  -----
+nmi:0.5709730898222931
+nmi class:0.19898497642023555
+domain_accuracy:0.9213732004429679

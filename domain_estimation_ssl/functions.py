@@ -124,15 +124,20 @@ def input_random_values(im:Image, resize, randomize_abs=True, randomize_pha=Fals
 
 
 
-
-def get_mix_filenames(config, edls):
+def get_all_filenames(config):
     root = os.path.join("/nas/data/syamagami/GDA/data/", config.dataset.parent)
     target_text_trains = [os.path.join(root, f"{each_dset_name}.txt") for each_dset_name in config.dataset.target_dsets]  # mix用.mixするにはdslr_webcamだったら2つのdsetのfilenameを一遍に取得しなくてはならない
 
     df_target = [pd.read_csv(att, sep=" ", names=("filename", "label")) for att in target_text_trains]  # mix用.mixするにはdslr_webcamだったら2つのdsetのfilenameを一遍に取得しなくてはならない
     df_target = pd.concat(df_target)
     df_target['dset'] = df_target['filename'].apply(lambda f: f.split('/')[0])
-    target_all_filenames = df_target.filename.values
+    all_filenames = df_target.filename.values
+
+    return all_filenames
+
+
+def get_mix_filenames(config, edls):
+    target_all_filenames = get_all_filenames(config)
 
     mix_filenames = []
     for dnum in range(len(np.unique(edls))):

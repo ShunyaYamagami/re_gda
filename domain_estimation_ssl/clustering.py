@@ -53,6 +53,7 @@ def clustering_exec(config, feats, dim_red_method, clust_method, dataset, log_di
     # plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c=class_cluster, outname=f'{dim_red_method}_cluster_class.pdf')
 
     if nmi_output:
+        # domain_clusterが0,1逆になってもNMIは変わらない.
         nmi = NMI(dataset.domain_labels, domain_cluster)
         nmi_class = NMI(dataset.labels, class_cluster)
         if len(config.dataset.target_dsets) == 2:

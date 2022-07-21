@@ -6,11 +6,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
+from memory_profiler import profile
 
 from models.baseline_encoder import Encoder
 from models.alexnet_simclr import AlexSimCLR
 from models.resnet_simclr import ResNetSimCLR
 from loss.nt_xent import NTXentLoss
+
 
 
 apex_support = False
@@ -75,6 +77,13 @@ class SimCLR(object):
         return loss
 
 
+    def _random_pseudo_step(self, model, x, criterion, edls):
+        pred = model(x)
+        pred = F.normalize(pred, dim=1)
+        loss = criterion(pred, edls)
+
+        return loss
+
     def train(self, does_load_model=False):
         train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=self.config.batch_size, shuffle=True, num_workers=2, drop_last=True)
         # save config file
@@ -87,7 +96,7 @@ class SimCLR(object):
             if self.config.model.base_model == "alexnet":
                 model = AlexSimCLR(self.config.model.out_dim).to(self.device)
             elif self.config.model.base_model == 'encoder':
-                model = Encoder(self.config.model.ssl, input_dim=3, out_dim=self.config.model.out_dim).to(self.device)
+                model = Encoder(self.config.model.ssl, input_dim=3, out_dim=self.config.model.out_dim, pseudo_out_dim=self.config.pseudo_out_dim).to(self.device)
             else:
                 model = ResNetSimCLR(self.config.model.base_model, self.config.model.out_dim).to(self.device)
 
@@ -102,6 +111,9 @@ class SimCLR(object):
         if self.config.model.ssl == 'simsiam':
             model.ssl = self.config.model.ssl
             criterion = nn.CosineSimilarity(dim=1).to(self.device)  # コサイン類似度
+        if self.config.model.ssl == 'random_pseudo':
+            model.ssl = self.config.model.ssl
+            criterion = nn.BCEWithLogitsLoss().to(self.device)
             
         optimizer = torch.optim.Adam(model.parameters(), 1e-3, weight_decay=eval(self.config.weight_decay))
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0, last_epoch=-1)
@@ -116,12 +128,14 @@ class SimCLR(object):
             for xis, xjs, edls in train_loader:
                 optimizer.zero_grad()
 
-                xis, xjs = xis.cuda(), xjs.cuda()
+                xis, xjs, edls = xis.to(self.device), xjs.to(self.device), edls.to(self.device)
 
                 if self.config.model.ssl == 'simclr':
                     loss = self._simclr_step(model, xis, xjs, edls)
                 elif self.config.model.ssl == 'simsiam':
                     loss = self._simsiam_step(model, xis, xjs, criterion, edls)
+                elif self.config.model.ssl == 'random_pseudo':
+                    loss = self._random_pseudo_step(model, xis, criterion, edls)
 
                 if n_iter % self.config.log_every_n_steps == 0:
                     print(f'Epoch:{epoch_counter}/{self.config.epochs}({n_iter}) loss:{loss}')

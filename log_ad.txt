@@ -1,0 +1,370 @@
+順番注意
+    if config.cuda_dir == 0:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 1:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 2:
+        im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 3:
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
+    elif config.cuda_dir == 4:
+        im = get_jigsaw(im, resize, grid)
+    elif config.cuda_dir == 5:
+        pass
+    elif config.cuda_dir == 6:
+        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+        im = get_jigsaw(im, resize, grid)
+
+
+===============================================
+==============  amazon_dslr  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 5
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA5/ad_encoder__0
+    ---------------------------------------------------------
+nmi:0.4169427032331142
+nmi class:0.21695947461556112
+domain_accuracy:0.8506787330316742
+  -----  Load Model from record/Office31/CUDA5/ad_encoder__0 for clustering  -----
+nmi:0.4169427032331142
+nmi class:0.2285444012844055
+domain_accuracy:0.8506787330316742
+  -----  Load Model from record/Office31/CUDA5/ad_encoder__0 for clustering  -----
+nmi:0.4169427032331142
+nmi class:0.22743289370333086
+domain_accuracy:0.8506787330316742
+===============================================
+nmi:0.4523911223067964
+nmi class:0.21737112286228327
+domain_accuracy:0.8702865761689291
+  -----  Load Model from record/Office31/CUDA5/ad_encoder__1 for clustering  -----
+nmi:0.4523911223067964
+nmi class:0.22124133540300325
+domain_accuracy:0.8702865761689291
+  -----  Load Model from record/Office31/CUDA5/ad_encoder__1 for clustering  -----
+nmi:0.4523911223067964
+nmi class:0.2194519851972397
+domain_accuracy:0.8702865761689291
+===============================================
+nmi:0.4139025153473784
+nmi class:0.2257732983809147
+domain_accuracy:0.848868778280543
+  -----  Load Model from record/Office31/CUDA5/ad_encoder__2 for clustering  -----
+nmi:0.4139025153473784
+nmi class:0.2205248632542507
+domain_accuracy:0.848868778280543
+  -----  Load Model from record/Office31/CUDA5/ad_encoder__2 for clustering  -----
+nmi:0.4139025153473784
+nmi class:0.21965798974670894
+domain_accuracy:0.848868778280543
+
+
+
+
+
+===============================================
+==============  amazon_dslr  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 4
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA4/ad_encoder__3
+    ---------------------------------------------------------
+nmi:0.8682565497614757
+nmi class:0.20146036945758244
+domain_accuracy:0.9867269984917044
+-----  Load Model from record/Office31/CUDA4/ad_encoder__3 for clustering  -----
+nmi:0.27596718163446776
+nmi class:0.19379379820244255
+domain_accuracy:0.7363499245852188
+-----  Load Model from record/Office31/CUDA4/ad_encoder__3 for clustering  -----
+nmi:0.25895354025128436
+nmi class:0.19678829160308514
+domain_accuracy:0.7167420814479638
+===============================================
+nmi:0.3647352035375719
+nmi class:0.1956725713428482
+domain_accuracy:0.816289592760181
+  -----  Load Model from record/Office31/CUDA4/ad_encoder__4 for clustering  -----
+nmi:0.39266491690640204
+nmi class:0.19116584078450297
+domain_accuracy:0.8355957767722474
+  -----  Load Model from record/Office31/CUDA4/ad_encoder__4 for clustering  -----
+nmi:0.8671066428956249
+nmi class:0.1890854092250836
+domain_accuracy:0.987028657616893
+===============================================
+nmi:0.42365660318219706
+nmi class:0.18073240859209477
+domain_accuracy:0.8546003016591251
+  -----  Load Model from record/Office31/CUDA4/ad_encoder__5 for clustering  -----
+nmi:0.375692042713141
+nmi class:0.17180411280604577
+domain_accuracy:0.8241327300150829
+  -----  Load Model from record/Office31/CUDA4/ad_encoder__5 for clustering  -----
+nmi:0.37397307677396424
+nmi class:0.17685043139227408
+domain_accuracy:0.8229260935143288
+
+
+
+
+===============================================
+==============  amazon_dslr  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 3
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA3/ad_encoder__0
+    ---------------------------------------------------------
+nmi:0.37829390046857764
+nmi class:0.18284902377851922
+domain_accuracy:0.8259426847662141
+-----  Load Model from record/Office31/CUDA3/ad_encoder__0 for clustering  -----
+nmi:0.3796054968672785
+nmi class:0.17963479687254985
+domain_accuracy:0.8268476621417797
+-----  Load Model from record/Office31/CUDA3/ad_encoder__0 for clustering  -----
+nmi:0.3635031010293439
+nmi class:0.1859272675699765
+domain_accuracy:0.8153846153846154
+===============================================
+nmi:0.3223784430984719
+nmi class:0.1812359499561906
+domain_accuracy:0.7822021116138763
+  -----  Load Model from record/Office31/CUDA3/ad_encoder__0 for clustering  -----
+nmi:0.36888952002094266
+nmi class:0.18526456095793042
+domain_accuracy:0.8193061840120663
+  -----  Load Model from record/Office31/CUDA3/ad_encoder__0 for clustering  -----
+nmi:0.31966411346527696
+nmi class:0.18605375919761022
+domain_accuracy:0.779788838612368
+===============================================
+nmi:0.36930900786596754
+nmi class:0.19122047793997918
+domain_accuracy:0.8196078431372549
+  -----  Load Model from record/Office31/CUDA3/ad_encoder__1 for clustering  -----
+nmi:0.3598452929927617
+nmi class:0.19104944225945986
+domain_accuracy:0.8126696832579186
+  -----  Load Model from record/Office31/CUDA3/ad_encoder__1 for clustering  -----
+nmi:0.343127125726394
+nmi class:0.1917846855017107
+domain_accuracy:0.7996983408748115
+
+
+
+===============================================
+==============  amazon_dslr  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 2
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA2/ad_encoder__0
+    ---------------------------------------------------------
+nmi:0.39082144683342673
+nmi class:0.17455249562165645
+domain_accuracy:0.8343891402714932
+-----  Load Model from record/Office31/CUDA2/ad_encoder__0 for clustering  -----
+nmi:0.8446474893144994
+nmi class:0.16907110412261503
+domain_accuracy:0.9834087481146304
+-----  Load Model from record/Office31/CUDA2/ad_encoder__0 for clustering  -----
+nmi:0.3372073616965284
+nmi class:0.1691035204045449
+domain_accuracy:0.7948717948717948
+===============================================
+nmi:0.3210620547951183
+nmi class:0.17463210138930965
+domain_accuracy:0.7897435897435897
+  -----  Load Model from record/Office31/CUDA2/ad_encoder__1 for clustering  -----
+nmi:0.7257789292889795
+nmi class:0.17430568853949163
+domain_accuracy:0.9622926093514329
+  -----  Load Model from record/Office31/CUDA2/ad_encoder__1 for clustering  -----
+nmi:0.2310207814335358
+nmi class:0.17652491568237236
+domain_accuracy:0.6805429864253394
+===============================================
+nmi:0.8345086105176486
+nmi class:0.17429354773978342
+domain_accuracy:0.9819004524886877
+  -----  Load Model from record/Office31/CUDA2/ad_encoder__2 for clustering  -----
+nmi:0.8349343867231059
+nmi class:0.17439709528638
+domain_accuracy:0.9825037707390648
+  -----  Load Model from record/Office31/CUDA2/ad_encoder__2 for clustering  -----
+nmi:0.8405509622689872
+nmi class:0.1667996523047264
+domain_accuracy:0.9828054298642533
+
+
+
+
+
+===============================================
+==============  amazon_dslr  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 1
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA1/ad_encoder__0
+    ---------------------------------------------------------
+nmi:0.15804946197185002
+nmi class:0.1821891393407936
+domain_accuracy:0.5547511312217195
+  -----  Load Model from record/Office31/CUDA1/ad_encoder__0 for clustering  -----
+nmi:0.1513190484364809
+nmi class:0.17447159359707684
+domain_accuracy:0.5402714932126698
+  -----  Load Model from record/Office31/CUDA1/ad_encoder__0 for clustering  -----
+nmi:0.1425990786352481
+nmi class:0.17964397847712799
+domain_accuracy:0.5206636500754148
+===============================================
+nmi:0.15620075562425212
+nmi class:0.17944201965897133
+domain_accuracy:0.5508295625942685
+  -----  Load Model from record/Office31/CUDA1/ad_encoder__1 for clustering  -----
+nmi:0.1775525923760459
+nmi class:0.1786130284033172
+domain_accuracy:0.5936651583710407
+  -----  Load Model from record/Office31/CUDA1/ad_encoder__1 for clustering  -----
+nmi:0.18930614279591712
+nmi class:0.17014814172201034
+domain_accuracy:0.6150829562594269
+===============================================
+nmi:0.5150331117500939
+nmi class:0.16620460123386022
+domain_accuracy:0.8992458521870287
+  -----  Load Model from record/Office31/CUDA1/ad_encoder__2 for clustering  -----
+nmi:0.4918872372562961
+nmi class:0.17176512443028796
+domain_accuracy:0.8892911010558069
+  -----  Load Model from record/Office31/CUDA1/ad_encoder__2 for clustering  -----
+nmi:0.1842424169287321
+nmi class:0.17318362479464275
+domain_accuracy:0.6060331825037707
+
+
+
+
+
+===============================================
+==============  amazon_dslr  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 0
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA0/ad_encoder__0
+    ---------------------------------------------------------
+nmi:0.26046359941705355
+nmi class:0.1594358170825519
+domain_accuracy:0.718552036199095
+  -----  Load Model from record/Office31/CUDA0/ad_encoder__0 for clustering  -----
+nmi:0.25820289788871026
+nmi class:0.15491237859220094
+domain_accuracy:0.7158371040723982
+  -----  Load Model from record/Office31/CUDA0/ad_encoder__0 for clustering  -----
+nmi:0.24633997350167938
+nmi class:0.14938191484984994
+domain_accuracy:0.7010558069381598
+===============================================
+nmi:0.3094572992874861
+nmi class:0.16408907121121344
+domain_accuracy:0.7704374057315234
+  -----  Load Model from record/Office31/CUDA0/ad_encoder__1 for clustering  -----
+nmi:0.33072979789067386
+nmi class:0.15907935351620067
+domain_accuracy:0.7894419306184012
+  -----  Load Model from record/Office31/CUDA0/ad_encoder__1 for clustering  -----
+nmi:0.39592464872857486
+nmi class:0.1574941514383479
+domain_accuracy:0.8377073906485671
+===============================================
+nmi:0.8508996564958042
+nmi class:0.16690228912697289
+domain_accuracy:0.984313725490196
+  -----  Load Model from record/Office31/CUDA0/ad_encoder__2 for clustering  -----
+nmi:0.8551424972086266
+nmi class:0.16317846801186375
+domain_accuracy:0.9849170437405732
+  -----  Load Model from record/Office31/CUDA0/ad_encoder__2 for clustering  -----
+nmi:0.8452688496815345
+nmi class:0.16027434470123833
+domain_accuracy:0.9840120663650075
+
+
+
+
+===============================================
+==============  amazon_dslr  ==============
+===============================================
+    ---------------------------------------------------------
+        cuda_dir: 6
+        batch_size: 256,  epochs: 100
+        SSL: simclr,  base_model: encoder
+        jigsaw: True,  fourier: True,  grid: 3
+        num_laps: 2, 
+        log_dir: record/Office31/CUDA6/ad_encoder__0
+    ---------------------------------------------------------
+nmi:0.8603781510906419
+nmi class:0.18665976261477873
+domain_accuracy:0.9861236802413273
+  -----  Load Model from record/Office31/CUDA6/ad_encoder__0 for clustering  -----
+nmi:0.3421845304267266
+nmi class:0.18302561253424068
+domain_accuracy:0.8069381598793364
+  -----  Load Model from record/Office31/CUDA6/ad_encoder__0 for clustering  -----
+nmi:0.8660287540302591
+nmi class:0.19158311391728605
+domain_accuracy:0.9864253393665159
+===============================================
+nmi:0.8763397560236513
+nmi class:0.18928183967067191
+domain_accuracy:0.9882352941176471
+  -----  Load Model from record/Office31/CUDA6/ad_encoder__1 for clustering  -----
+nmi:0.8693859900723869
+nmi class:0.18492086183075138
+domain_accuracy:0.9873303167420815
+  -----  Load Model from record/Office31/CUDA6/ad_encoder__1 for clustering  -----
+nmi:0.8773489278949219
+nmi class:0.18938921059941408
+domain_accuracy:0.9879336349924586
+===============================================
+nmi:0.35545140793121216
+nmi class:0.17777125958216658
+domain_accuracy:0.8093514328808447
+  -----  Load Model from record/Office31/CUDA6/ad_encoder__2 for clustering  -----
+nmi:0.3705719553571257
+nmi class:0.17681313957529454
+domain_accuracy:0.8205128205128205
+  -----  Load Model from record/Office31/CUDA6/ad_encoder__2 for clustering  -----
+nmi:0.8538057137769167
+nmi class:0.1801674348259393
+domain_accuracy:0.9852187028657617

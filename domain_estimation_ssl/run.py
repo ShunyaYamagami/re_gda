@@ -7,6 +7,7 @@ import torch
 from torchvision.transforms import transforms
 import yaml
 from time import time
+from memory_profiler import profile
 
 from data_aug.gaussian_blur import GaussianBlur
 from clustering import run_clustering
@@ -22,6 +23,7 @@ parser.add_argument('--num_laps', default=1)  # デフォルトのlog_dirの後�
 parser.add_argument('--spread_message', type=str, default="")  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 parser.add_argument('--cuda_dir', default=-1)  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 args = parser.parse_args()
+
 
 def main(args):
     start_time = time()
@@ -39,16 +41,18 @@ def main(args):
         batch_size: {config.batch_size},  epochs: {config.epochs}
         SSL: {config.model.ssl},  base_model: {config.model.base_model}
         jigsaw: {config.dataset.jigsaw},  fourier: {config.dataset.fourier},  grid: {config.dataset.grid}
-        num_laps: {config.num_laps}
+        num_laps: {config.num_laps}, 
+        log_dir: {config.log_dir}
     ---------------------------------------------------------
     """)
 
     try:
         print(f"\n=================  1/{config.num_laps}周目  =================")
         config.lap = 1
-        # dataset = get_datasets(config, 'train')
-        # simclr = SimCLR(dataset, config)
-        # simclr.train()
+        config.pseudo_out_dim = 8
+        dataset = get_datasets(config, 'train')
+        simclr = SimCLR(dataset, config)
+        simclr.train()
 
         print(f"=================  Clustering 1/{config.num_laps}  =================")
         feats, edls_dataset, nmi, nmi_class = run_clustering(config)
