@@ -10,7 +10,7 @@ from train.test import eval_step
 
 def get_dataloader_with_sampling(config, ld, ud):
     if config.clustering_method == "simCLR" and config.parent != 'Digit':
-        config.logger.info('use weighted sampler')
+        logger.info('use weighted sampler')
         edls = np.concatenate([ld.edls, ud.edls])
         domain_count = list(Counter(edls).values())  # 各推定ドメインの出現個数を取得
         weight = np.sum(domain_count) / np.array(domain_count)  # ****** 分子と分母逆じゃない？ ******
@@ -43,7 +43,7 @@ def _get_data_from_minibatch(config, sdata, tdata):
 
 
 def dann_OS_step(
-    config, feature_extractor, class_classifier, domain_classifier,
+    config, logger, feature_extractor, class_classifier, domain_classifier,
     source_dataloader, target_dataloader, class_criterion, domain_criterion, optimizer, epoch, ood_class=-1
 ):
     """
@@ -134,10 +134,10 @@ def dann_OS_step(
 
             target_dataloader.dataset.update_labels(tgt_idx.numpy(), new_label.cpu().numpy())
 
-    config.logger.info(f"\t [Loss]: {loss.item():.4f} \t  [Class Loss]: {class_loss.item():.4f} \t  [Domain Loss]: {domain_loss.item():.4f}")
+    logger.info(f"\t [Loss]: {loss.item():.4f} \t [Class Loss]: {class_loss.item():.4f} \t [Domain Loss]: {domain_loss.item():.4f}")
 
 
-def run_dann_OS(config, ld, ud, td_list):
+def run_dann_OS(config, logger, writer, ld, ud, td_list):
     ### 何でランダムサンプリングしてんの？する意味なくない？
     # src_train_dataloader, tgt_train_dataloader = sample_dataloader(config, ld, ud)
     ### とりあえずランダムサンプリングは一切しない方法でやってみる.
@@ -167,11 +167,13 @@ def run_dann_OS(config, ld, ud, td_list):
 
     config.best = 0
     for epoch in range(config.epochs):
-        config.logger.info(f'Epoch: {epoch+1}/{config.epochs}')
+        logger.info(f'Epoch: {epoch+1}/{config.epochs}')
         dann_OS_step(
-            config, feature_extractor, class_classifier, domain_classifier,
+            config, logger, feature_extractor, class_classifier, domain_classifier,
             src_train_dataloader, tgt_train_dataloader, class_criterion, domain_criterion, optimizer, epoch, ood_class=config.num_class-1
         )
-        total_acc, accuracy_list, mtx = eval_step(config, feature_extractor, class_classifier, td_list, epoch)
+        total_acc, accuracy_list, mtx = eval_step(
+            config, logger, writer, feature_extractor, class_classifier, td_list, epoch
+        )
 
         save_models(config, [feature_extractor, class_classifier, domain_classifier], epoch, total_acc, accuracy_list, mtx)

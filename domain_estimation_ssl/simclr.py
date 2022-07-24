@@ -28,7 +28,7 @@ except:
 torch.manual_seed(0)
 
 
-def get_models_func(config, device):
+def get_models_func(config):
     if config.dataset.parent == "Digit":
         if config.model.base_model == 'encoder':
             model = Encoder(config.model.ssl, input_dim=3, out_dim=config.model.out_dim, pseudo_out_dim=config.pseudo_out_dim)
@@ -42,7 +42,7 @@ def get_models_func(config, device):
         else:
             model = ResNetSimCLR(config.model.base_model, config.model.out_dim)
     
-    model = model.to(device)
+    model = model.to(config.device)
     return model
 
 
@@ -51,17 +51,9 @@ class SimCLR(object):
     def __init__(self, dataset, config, logger):
         self.config = config
         self.logger = logger
-        self.device = self._get_device()
         self.writer = SummaryWriter(log_dir=config.tensorboard_log_dir)
         self.dataset = dataset
-        self.nt_xent_criterion = NTXentLoss(config, self.device, config.batch_size, **config.loss)
-
-
-    def _get_device(self):
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.logger.info(f"Running on: {device}")
-        return device
-
+        self.nt_xent_criterion = NTXentLoss(config, config.batch_size, **config.loss)
 
     def _simclr_step(self, model, xis, xjs, edls):
         # get the representations and the projections
@@ -100,7 +92,7 @@ class SimCLR(object):
     def train(self, does_load_model=False):
         train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=self.config.batch_size, shuffle=True, num_workers=2, drop_last=True)
 
-        model = get_models_func(self.config, self.device)
+        model = get_models_func(self.config)
         # ADD 2回目任意で1回目の重みをロードしてファインチューニングできればと．
         if does_load_model:
             model = self._load_pre_trained_weights(self.config, model)
@@ -112,10 +104,10 @@ class SimCLR(object):
         # set criterion
         if self.config.model.ssl == 'simsiam':
             model.ssl = self.config.model.ssl
-            criterion = nn.CosineSimilarity(dim=1).to(self.device)  # コサイン類似度
+            criterion = nn.CosineSimilarity(dim=1).to(self.config.device)  # コサイン類似度
         if self.config.model.ssl == 'random_pseudo':
             model.ssl = self.config.model.ssl
-            criterion = nn.BCEWithLogitsLoss().to(self.device)
+            criterion = nn.BCEWithLogitsLoss().to(self.config.device)
         # set optimizer
         optimizer = torch.optim.Adam(model.parameters(), 1e-3, weight_decay=eval(self.config.weight_decay))
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0, last_epoch=-1)
@@ -125,7 +117,7 @@ class SimCLR(object):
         n_iter = 0
         for epoch_counter in range(self.config.epochs):
             for xis, xjs, edls in train_loader:
-                xis, xjs, edls = xis.to(self.device), xjs.to(self.device), edls.to(self.device)
+                xis, xjs, edls = xis.to(self.config.device), xjs.to(self.config.device), edls.to(self.config.device)
 
                 optimizer.zero_grad()
 
@@ -168,19 +160,19 @@ class SimCLR(object):
         return model
 
 
-    def _validate(self, model, valid_loader):
-        # validation steps
-        with torch.no_grad():
-            model.eval()
-            valid_loss = 0.0
-            counter = 0
-            for (xis, xjs), _ in valid_loader:
-                xis = xis.to(self.device)
-                xjs = xjs.to(self.device)
+    # def _validate(self, model, valid_loader):
+    #     # validation steps
+    #     with torch.no_grad():
+    #         model.eval()
+    #         valid_loss = 0.0
+    #         counter = 0
+    #         for (xis, xjs), _ in valid_loader:
+    #             xis, xjs = xis.to(self.config.device), xjs.to(self.config.device)
+    #             
 
-                loss = self._step(model, xis, xjs, counter)
-                valid_loss += loss.item()
-                counter += 1
-            valid_loss /= counter
-        model.train()
-        return valid_loss
+    #             loss = self._step(model, xis, xjs, counter)
+    #             valid_loss += loss.item()
+    #             counter += 1
+    #         valid_loss /= counter
+    #     model.train()
+    #     return valid_loss

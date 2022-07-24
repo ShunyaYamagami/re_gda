@@ -4,6 +4,7 @@ import numpy as np
 import os
 import shutil
 from time import time
+import torch
 import yaml
 from tensorboardX import SummaryWriter
 
@@ -22,7 +23,13 @@ parser.add_argument('--spread_message', type=str, default="")  # デフォルト
 parser.add_argument('--cuda_dir', default=-1)  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 args = parser.parse_args()
 
-        
+
+def get_device():
+    """ GPU or CPU """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print("Running on:", device)
+    return device
+
 def set_logger_writer(config):
     if os.path.exists(config.log_dir):
         shutil.rmtree(config.log_dir)
@@ -40,10 +47,15 @@ def set_logger_writer(config):
     logger.addHandler(handlerFile)
     return logger
 
-def save_config_file(original_path, model_checkpoints_folder):
+def save_config_file(config, original_path, model_checkpoints_folder):
     os.makedirs(model_checkpoints_folder, exist_ok=True)
     shutil.copy(original_path, os.path.join(model_checkpoints_folder, 'config.yaml'))
-        
+    config_list = []
+    for k,v in config.items():
+        config_list.append(f"{k}: {v}\n")
+    with open(os.path.join(model_checkpoints_folder, "config.txt"), 'w') as f:
+        f.writelines(config_list)
+
 def set_config(args):
     config = yaml.load(open(args.config, "r"), Loader=yaml.FullLoader)
     config = EasyDict(config)
@@ -59,7 +71,8 @@ def set_config(args):
     config.checkpoints_dir = os.path.join(config.log_dir, 'checkpoints')
     config.model_path = os.path.join(config.log_dir, 'checkpoints', 'model.pth')
     # config.logger, config.writer = set_logger_writer(config)
-    save_config_file(config.config_path, config.checkpoints_dir)
+    config.device = get_device()
+    save_config_file(config, config.config_path, config.checkpoints_dir)
 
     return config
 
@@ -71,7 +84,7 @@ def main():
     mail_body_texts = []
     logger.info(f"""    
     ===============================================
-    =============== {"_".join(config.dataset.target_dsets)} ===================
+    ========== {"_".join(config.dataset.target_dsets)} ==============
     ===============================================
     ---------------------------------------------------------
         cuda_dir: {config.cuda_dir}

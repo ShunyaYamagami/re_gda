@@ -41,15 +41,15 @@ def get_model(config, use_weights=True):
     
 def save_models(config, save_nets: list, epoch, total_acc, accuracy_list, mtx):
     """ 最新のモデルを保存する. また, best accuracyだったら保存する """
-    if not os.path.exists(config.checkpoint_dir):
-        os.makedirs(config.checkpoint_dir)
+    if not os.path.exists(config.checkpoints_dir):
+        os.makedirs(config.checkpoints_dir)
     latest_filenames = ["feature_extractor_latest", "class_classifier_latest", "domain_classifier_latest"]
     best_filenames = ["feature_extractor_best", "class_classifier_best", "domain_classifier_best"]
     
     for i, save_net in enumerate(save_nets):
-        torch.save(save_net.state_dict(), os.path.join(config.checkpoint_dir, f"{latest_filenames[i]}.tar"))
+        torch.save(save_net.state_dict(), os.path.join(config.checkpoints_dir, f"{latest_filenames[i]}.tar"))
 
         if total_acc > config.best:
             config.best = total_acc
-            torch.save(save_net.state_dict(), os.path.join(config.checkpoint_dir, f"{best_filenames[i]}.tar"))
+            torch.save(save_net.state_dict(), os.path.join(config.checkpoints_dir, f"{best_filenames[i]}.tar"))
             write_log_file(config, epoch, total_acc, accuracy_list, mtx)

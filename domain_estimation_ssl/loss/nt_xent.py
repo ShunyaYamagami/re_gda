@@ -5,12 +5,11 @@ import itertools
 import gc
 
 class NTXentLoss(nn.Module):
-    def __init__(self, config, device, batch_size, temperature, use_cosine_similarity):
+    def __init__(self, config, batch_size, temperature, use_cosine_similarity):
         super().__init__()
         self.config = config
         self.batch_size = batch_size
         self.temperature = temperature
-        self.device = device
         self.softmax = nn.Softmax(dim=-1)
         # self.similarity_function = self._get_similarity_function(use_cosine_similarity)
         if use_cosine_similarity:
@@ -27,10 +26,10 @@ class NTXentLoss(nn.Module):
         tril = torch.tril(torch.ones(2 * self.batch_size, 2 * self.batch_size))
 
         if positive:
-            positive_masks = pos_pairs.type(torch.bool).to(self.device)
+            positive_masks = pos_pairs.type(torch.bool).to(self.config.device)
             return positive_masks
         else:
-            negative_masks = (1 - tril - pos_pairs).type(torch.bool).to(self.device)
+            negative_masks = (1 - tril - pos_pairs).type(torch.bool).to(self.config.device)
             return negative_masks
 
 
@@ -72,7 +71,7 @@ class NTXentLoss(nn.Module):
 
         logits = torch.cat((positives, negatives), dim=1)  # 横に結合.
         logits /= self.temperature
-        labels = torch.zeros(self.batch_size).to(self.device).long()  # 1次元
+        labels = torch.zeros(self.batch_size).to(self.config.device).long()  # 1次元
         loss = self.criterion(logits, labels)  # logitsは重みでもある.重みが大きい(類似度が大きい)　-> lossは小さくなる
 
         return loss / self.batch_size

@@ -5,9 +5,12 @@ gamma: 10
 sigma: 0.5
 
 ### epochs
-epochs: 1000
-change_epoch: 100
-change_epoch2: 200
+# epochs: 1000
+# change_epoch: 100
+# change_epoch2: 200
+epochs: 250
+change_epoch: 80
+change_epoch2: 150
 
 ### optimizer
 optim: "momentum"
@@ -22,8 +25,8 @@ theta: 1
 
 ### modes
 clustering_method: "simCLR"
-training_mode: "source"
-# training_mode: "dann_OS"
+# training_mode: "source"
+training_mode: "dann_OS"
 
 ### domain sets
 num_domains: 2

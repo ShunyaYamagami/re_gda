@@ -6,7 +6,7 @@ from train.util import save_models, get_model
 from train.test import eval_step
     
 
-def source_step(config, feature_extractor, class_classifier, source_dataloader, class_criterion, optimizer):
+def source_step(config, logger, feature_extractor, class_classifier, source_dataloader, class_criterion, optimizer):
     """ 
     args:
         source_dataloader: img, label, edl, hist(pseudo_label), index
@@ -33,11 +33,11 @@ def source_step(config, feature_extractor, class_classifier, source_dataloader, 
 
     # print loss
     prompts = f'\t Class Loss: {class_loss.item():.6f}'
-    config.logger.info(prompts)
+    logger.info(prompts)
 
 
 
-def run_source(config, ld, td_list):
+def run_source(config, logger, writer, ld, td_list):
     src_train_dataloader = torch.utils.data.DataLoader(ld, config.batch_size, shuffle=True, num_workers=2)
     class_criterion = nn.CrossEntropyLoss()
     feature_extractor, class_classifier, _, = get_model(config, use_weights=True)
@@ -57,9 +57,14 @@ def run_source(config, ld, td_list):
 
     config.best = 0.0
     for epoch in range(config.epochs):
-        config.logger.info(f'Epoch: {epoch+1}/{config.epochs}')
+        logger.info(f'Epoch: {epoch+1}/{config.epochs}')
         
-        source_step(config, feature_extractor, class_classifier, src_train_dataloader, class_criterion, optimizer)
-        total_acc, accuracy_list, mtx = eval_step(config, feature_extractor, class_classifier, td_list, epoch)
+        source_step(
+            config, logger, feature_extractor, class_classifier, 
+            src_train_dataloader, class_criterion, optimizer
+        )
+        total_acc, accuracy_list, mtx = eval_step(
+            config, logger, writer, feature_extractor, class_classifier, td_list, epoch
+        )
 
         save_models(config, [feature_extractor, class_classifier], epoch, total_acc, accuracy_list, mtx)

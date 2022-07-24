@@ -1,3 +1,4 @@
+from doctest import testfile
 import os
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ import torch.utils.data as data
 from torchvision.transforms import transforms
 
 
-def load(root, filename, resize):
+def load(config, root, filename, resize):
     return Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
     
 
@@ -20,7 +21,7 @@ class LabeledDataset(data.Dataset):
         self.root = root
         self.labels = labels
         self.transform = transform
-        self.imgs = Parallel(n_jobs=4, verbose=1)([delayed(load)(self.root, filename, resize) for filename in filenames])
+        self.imgs = Parallel(n_jobs=4, verbose=1)([delayed(load)(self.config, self.root, filename, resize) for filename in filenames])
         self.true_domain_labels = [true_domain_label] * len(self.imgs)  # 真のドメインラベル
         self.num_history = config.num_history
         self.pseudo_label = np.zeros(len(self.imgs))
@@ -100,7 +101,7 @@ def get_transforms(config):
     return train_transform, test_transform
 
 
-def get_lut_dataset(config, dset_taple, true_domain_label, edls):
+def get_lut_dataset(config, logger, dset_taple, true_domain_label, edls):
     print("************************************************")
     print("************************************************")
     print("************************************************")
@@ -165,12 +166,10 @@ def get_lut_dataset(config, dset_taple, true_domain_label, edls):
 
 
 
-def get_lut_dataset_office31(config, dset_taple, true_domain_label, edls):
+def get_lut_dataset_office31(config, logger, dset_taple, true_domain_label, edls):
     """ 
     Office31用
         trainファイルとtestファイルが分かれていないので,この関数内で分ける.
-        testはdset_taple[1]以外のクラスを使うらしいので, dset_taple[1]以外のクラスの画像を7:3に分ける.
-        つまり, train時に, ラベル付き画像の方がラベル無し画像より圧倒的に多いので, 教師あり学習に近い形となり精度が出やすくなってそう.
     args:
         dset_taple[1]: labeled (ラベルが付いたクラス)
         dset_taple[2]: unlabeled (ラベルが付いていないクラス)
@@ -190,43 +189,51 @@ def get_lut_dataset_office31(config, dset_taple, true_domain_label, edls):
     df = pd.read_csv(text_train, sep=" ", names=("filename", "label"))
     filenames = df.filename.values
     labels = df.label.values
-
-    labeled_train_index = [i for i, l in enumerate(labels) if l in dset_taple[1]]
-    unlabeled_train_index_t = [i for i, l in enumerate(labels) if (l in dset_taple[2]) and (l not in dset_taple[1])]
-
-    unlabeled_train_index, unlabeled_test_index = train_test_split(unlabeled_train_index_t, train_size=0.7, shuffle=True)
-
-    labeled_filenames = filenames[labeled_train_index]
-    labeled_labels = labels[labeled_train_index]
-    unlabeled_filenames = filenames[unlabeled_train_index]
-    unlabeled_labels = labels[unlabeled_train_index]
-
     # 推定ドメインラベル
     target_edls = edls[:len(filenames)]
-    edls = edls[len(filenames):]  # 次のdset用に前半を削除したedls
-    labeled_train_edls = target_edls[labeled_train_index]
-    unlabeled_train_edls = target_edls[unlabeled_train_index]
+    next_edls = edls[len(filenames):]  # 次のdset用に前半を削除したedls
 
-    train_transform, test_transform = get_transforms(config)
+    train_files, test_files = train_test_split(filenames, train_size=0.75, shuffle=True)
+    train_index = sorted([list(filenames).index(x) for x in train_files])
+    test_index = sorted([list(filenames).index(x) for x in test_files])
+    
+    labeled_train_index = []
+    unlabeled_train_index = []
+    for tr_idx in train_index:
+        if labels[tr_idx] in dset_taple[1]:
+            labeled_train_index.append(tr_idx)
+        elif labels[tr_idx] in dset_taple[2]:
+            unlabeled_train_index.append(tr_idx)
+
+    # labeled train
+    labeled_train_filenames = filenames[labeled_train_index]
+    labeled_train_labels = labels[labeled_train_index]
+    labeled_train_edls = target_edls[labeled_train_index]
+    # unlabeled train
+    unlabeled_train_filenames = filenames[unlabeled_train_index]
+    unlabeled_train_labels = labels[unlabeled_train_index]
+    unlabeled_train_edls = target_edls[unlabeled_train_index]
+    # test
+    test_filenames = filenames[test_index]
+    test_labels = labels[test_index]
+    test_edls = target_edls[test_index]
 
     img_root = os.path.join(text_root, "imgs")
-    config.logger.info(f"--- read {dset_taple[0]} labeled ---")
-    labeled_dataset = LabeledDataset(config, img_root, labeled_filenames, labeled_labels, true_domain_label, resize, train_transform, labeled_train_edls)
-    config.logger.info(f"--- read {dset_taple[0]} unlabeled ---")
-    unlabeled_dataset = LabeledDataset(config, img_root, unlabeled_filenames, unlabeled_labels, true_domain_label, resize, train_transform, unlabeled_train_edls)
+    train_transform, test_transform = get_transforms(config)
+    logger.info(f"  [{dset_taple[0]}] read labeled train {len(labeled_train_filenames)}")
+    labeled_dataset = LabeledDataset(config, img_root, labeled_train_filenames, labeled_train_labels, true_domain_label, resize, train_transform, labeled_train_edls)
+    logger.info(f"  [{dset_taple[0]}] read unlabeled train {len(unlabeled_train_filenames)}")
+    unlabeled_dataset = LabeledDataset(config, img_root, unlabeled_train_filenames, unlabeled_train_labels, true_domain_label, resize, train_transform, unlabeled_train_edls)
+    logger.info(f"  [{dset_taple[0]}] read test {len(test_filenames)}")
+    test_dataset = LabeledDataset(config, img_root, test_filenames, test_labels, true_domain_label, resize, test_transform, test_edls)
 
-    ### load test
-    test_filenames = filenames[unlabeled_test_index]
-    test_labels = labels[unlabeled_test_index]
-    unlabeled_test_edls = target_edls[unlabeled_test_index]
-    config.logger.info(f"--- read {dset_taple[0]} test ---")
-    test_dataset = LabeledDataset(config, img_root, test_filenames, test_labels, true_domain_label, resize, test_transform, unlabeled_test_edls)
+    logger.info(f"  [{dset_taple[0]}] unique_total_num: {len(np.unique(labeled_train_index + unlabeled_train_index + test_index))}\n")
 
-    return labeled_dataset, unlabeled_dataset, test_dataset, edls
+    return labeled_dataset, unlabeled_dataset, test_dataset, next_edls
 
 
 
-def get_datasets(config):
+def get_datasets(config, logger):
     """
     args:
         mode: train or test -> transformを決める
@@ -252,11 +259,11 @@ def get_datasets(config):
     get_lut_func = get_lut_dataset_office31 if config.parent == 'Office31' else get_lut_dataset
 
     td_list = []
-    ld, ud, td, edls = get_lut_func(config, config.dset_taples[0], 0, edls)
+    ld, ud, td, edls = get_lut_func(config, logger, config.dset_taples[0], 0, edls)
     td_list.append([config.dset_taples[0][0], relabeling_dataset(td, union_classes)])
 
     for i, dset_taple in enumerate(config.dset_taples[1:]):
-        ld_t, ud_t, td_t, edls = get_lut_func(config, dset_taple, i + 1, edls)
+        ld_t, ud_t, td_t, edls = get_lut_func(config, logger, dset_taple, i + 1, edls)
         ld.concat_dataset(ld_t)
         ud.concat_dataset(ud_t)
         td_list.append([dset_taple[0], relabeling_dataset(td_t, union_classes)])

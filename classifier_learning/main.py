@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import argparse
 from easydict import EasyDict
+import numpy as np
 import os
 import shutil
 import yaml
@@ -27,35 +28,34 @@ def get_device():
     """ GPU or CPU """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print("Running on:", device)
-
     return device
 
-
-def save_config_file(original_path, model_checkpoints_folder):
-    """ 今回のconfig fileの内容を書きだす（手動で追加した部分も書き出してよいかもな） """
-    if not os.path.exists(model_checkpoints_folder):
-        os.makedirs(model_checkpoints_folder)
-        shutil.copy(original_path, os.path.join(model_checkpoints_folder, 'config.yaml'))
-
+def save_config_file(config, original_path, model_checkpoints_folder):
+    os.makedirs(model_checkpoints_folder, exist_ok=True)
+    shutil.copy(original_path, os.path.join(model_checkpoints_folder, 'config.yaml'))
+    config_list = []
+    for k,v in config.items():
+        config_list.append(f"{k}: {v}\n")
+    with open(os.path.join(model_checkpoints_folder, "config.txt"), 'w') as f:
+        f.writelines(config_list)
 
 def set_logger_writer(config):
+    if os.path.exists(config.log_dir):
+        shutil.rmtree(config.log_dir)
+    os.makedirs(config.checkpoints_dir, exist_ok=True)
     logger = getLogger("show_loss_accuarcy")
+    logger.setLevel(DEBUG)
     # formatter = Formatter('%(asctime)s [%(levelname)s] \n%(message)s')
     handlerSh = StreamHandler()
-    # handlerFile = FileHandler(os.path.join(config.log_dir, "prompts.log"))
+    handlerSh.setLevel(DEBUG)
     # handlerSh.setFormatter(formatter)
-    # handlerSh.setLevel(DEBUG)
-    # handlerFile.setFormatter(formatter)
-    # handlerFile.setLevel(DEBUG)
-    logger.setLevel(DEBUG)
     logger.addHandler(handlerSh)
-    # logger.addHandler(handlerFile)
-    if os.path.exists(config.tensorboard_log_dir):
-        shutil.rmtree(config.tensorboard_log_dir)
-    os.makedirs(config.tensorboard_log_dir)
-    writer = SummaryWriter(config.tensorboard_log_dir)
+    handlerFile = FileHandler(os.path.join(config.log_dir, "prompts.log"))
+    # handlerFile.setFormatter(formatter)
+    handlerFile.setLevel(DEBUG)
+    logger.addHandler(handlerFile)
+    writer = SummaryWriter(log_dir=config.tensorboard_log_dir)
     return logger, writer
-
 
 def set_config(args):
     config = yaml.load(open(args.config, "r"), Loader=yaml.FullLoader)
@@ -66,34 +66,33 @@ def set_config(args):
     config.cuda_dir = int(args.cuda_dir)
     config.spread_message = args.spread_message
     # set manually
-    config.checkpoint_dir = os.path.join(config.log_dir, "checkpoints")
-    config.tensorboard_log_dir = os.path.join(config.log_dir, "logs")
-    logger, writer = set_logger_writer(config)
-    config.logger = logger
-    config.writer = writer
+    config.target_dsets = np.array(config.dset_taples, dtype=object)[:,0]  # dset名のリスト
+    config.tensorboard_log_dir = os.path.join(config.log_dir, 'logs')
+    config.checkpoints_dir = os.path.join(config.log_dir, 'checkpoints')
     config.device = get_device()
-
-    save_config_file(config.config_path, config.log_dir)
+    save_config_file(config, config.config_path, config.checkpoints_dir)
     return config
 
 
 
 def main():
     config = set_config(args)
-    print(f"""    ---------------------------------------------------------
+    logger, writer = set_logger_writer(config)
+    logger.info(f"""    ---------------------------------------------------------
         cuda_dir: {config.cuda_dir}
         batch_size: {config.batch_size},  epochs: {config.epochs}
+        change_epoch: {config.change_epoch},  change_epoch2: {config.change_epoch2}
         training_mode: {config.training_mode},  model: {config.model}, optim: {config.optim}
-        gamma: {config.gamma},  theta: {config.theta},  num_history: {config.num_history}
+        gamma: {config.gamma},  theta: {config.theta},  sigam: {config.sigma},  num_history: {config.num_history}
         log_dir: {config.log_dir}
     ---------------------------------------------------------
     """)
     
-    ld, ud, td_list = get_datasets(config)
+    ld, ud, td_list = get_datasets(config, logger)
     if config.training_mode == "source":
-        run_source(config, ld, td_list)
+        run_source(config, logger, writer, ld, td_list)
     elif config.training_mode == "dann_OS":
-        run_dann_OS(config, ld, ud, td_list)
+        run_dann_OS(config, logger, writer, ld, ud, td_list)
 
 
 if __name__ == '__main__':

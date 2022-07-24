@@ -40,7 +40,7 @@ config = easydict.EasyDict(config)
 config.config_path = args.config
 config.log_dir = args.log_dir
 config.cuda_dir = int(args.cuda_dir)
-config.checkpoint_dir = os.path.join(config.log_dir, "checkpoints")
+config.checkpoints_dir = os.path.join(config.log_dir, "checkpoints")
 
 save_config_file(config.config_path, config.log_dir)
 
@@ -188,13 +188,13 @@ def run_source(ld, ud, td_list, num_class):
         total_acc, accuracy_list, mtx = eval(feature_extractor, class_classifier, td_list, num_class, epoch, logger)
 
         # save model
-        torch.save(feature_extractor.state_dict(), os.path.join(config.checkpoint_dir, "feature_extractor_latest.tar"))
-        torch.save(class_classifier.state_dict(), os.path.join(config.checkpoint_dir, "class_classifier_latest.tar"))
+        torch.save(feature_extractor.state_dict(), os.path.join(config.checkpoints_dir, "feature_extractor_latest.tar"))
+        torch.save(class_classifier.state_dict(), os.path.join(config.checkpoints_dir, "class_classifier_latest.tar"))
 
         if total_acc > best:
             best = total_acc
-            torch.save(feature_extractor.state_dict(), os.path.join(config.checkpoint_dir, "feature_extractor_best.tar"))
-            torch.save(class_classifier.state_dict(), os.path.join(config.checkpoint_dir, "class_classifier_best.tar"))
+            torch.save(feature_extractor.state_dict(), os.path.join(config.checkpoints_dir, "feature_extractor_best.tar"))
+            torch.save(class_classifier.state_dict(), os.path.join(config.checkpoints_dir, "class_classifier_best.tar"))
 
             with open(os.path.join(outdir, "best.txt"), "w") as f:
                 f.write("Epoch {}\n".format(epoch))
@@ -258,15 +258,15 @@ def run_dann_OS(ld, ud, td_list, num_class):
         total_acc, accuracy_list, mtx = eval(feature_extractor, class_classifier, td_list, num_class, epoch, logger)
 
         # save model
-        torch.save(feature_extractor.state_dict(), os.path.join(config.checkpoint_dir, "feature_extractor_latest.tar"))
-        torch.save(class_classifier.state_dict(), os.path.join(config.checkpoint_dir, "class_classifier_latest.tar"))
-        torch.save(domain_classifier.state_dict(), os.path.join(config.checkpoint_dir, "domain_classifier_latest.tar"))
+        torch.save(feature_extractor.state_dict(), os.path.join(config.checkpoints_dir, "feature_extractor_latest.tar"))
+        torch.save(class_classifier.state_dict(), os.path.join(config.checkpoints_dir, "class_classifier_latest.tar"))
+        torch.save(domain_classifier.state_dict(), os.path.join(config.checkpoints_dir, "domain_classifier_latest.tar"))
 
         if total_acc > best:
             best = total_acc
-            torch.save(feature_extractor.state_dict(), os.path.join(config.checkpoint_dir, "feature_extractor_best.tar"))
-            torch.save(class_classifier.state_dict(), os.path.join(config.checkpoint_dir, "class_classifier_best.tar"))
-            torch.save(domain_classifier.state_dict(), os.path.join(config.checkpoint_dir, "domain_classifier_best.tar"))
+            torch.save(feature_extractor.state_dict(), os.path.join(config.checkpoints_dir, "feature_extractor_best.tar"))
+            torch.save(class_classifier.state_dict(), os.path.join(config.checkpoints_dir, "class_classifier_best.tar"))
+            torch.save(domain_classifier.state_dict(), os.path.join(config.checkpoints_dir, "domain_classifier_best.tar"))
 
             with open(os.path.join(outdir, "best.txt"), "w") as f:
                 f.write("Epoch {}\n".format(epoch))

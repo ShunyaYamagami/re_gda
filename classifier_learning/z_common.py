@@ -23,9 +23,6 @@ LOG_TEXT = 'class_classifier'
 
 
 def config_to_execute(DATA_DOMAIN, PARENT, N_CUDA, log_dir_opt):
-    print("===============================================")
-    print(f'==============  {DATA_DOMAIN}  ==============')
-    print("===============================================")
     # set config / log directory
     domain_initials = "".join([dname[0] for dname in DATA_DOMAIN.split('_')])
     CONFIG_FILE = os.path.join(os.path.join('config', PARENT, f"{domain_initials}.yaml"))

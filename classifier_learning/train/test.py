@@ -40,7 +40,7 @@ def test_step(config, feature_extractor, class_classifier, target_dataloader):
 
 
 
-def eval_step(config, feature_extractor, class_classifier, td_list, epoch):
+def eval_step(config, logger, writer, feature_extractor, class_classifier, td_list, epoch):
     """
     args:
         td_list: [['amazon', <dataset.LabeledDataset>], ['dslr', <dataset.LabeledDataset>]]
@@ -63,16 +63,16 @@ def eval_step(config, feature_extractor, class_classifier, td_list, epoch):
         accuracy_list.append((domain, accuracy))
 
         correct_num = np.sum(np.equal(preds, labels))  # 正解データ数
-        config.logger.info(f'\t Target_Accuracy [{domain}]: {correct_num}/{len(labels)} ({100 * accuracy:.2f}%)')
-        config.writer.add_scalar(f'logs/{domain}/Target_Accuracy', accuracy, epoch)
+        logger.info(f'\t Target_Accuracy [{domain}]: {correct_num}/{len(labels)} ({100 * accuracy:.2f}%)')
+        writer.add_scalar(f'logs/{domain}/Target_Accuracy', accuracy, epoch)
 
     labels_list = np.concatenate(labels_list)
     preds_list = np.concatenate(preds_list)
 
 
     total_acc = accuracy_score(labels_list, preds_list)
-    config.logger.info(f"\t Total_Accuracy: {total_acc:.4f}")
-    config.writer.add_scalar('logs/Total_Accuracy', total_acc, epoch)
+    logger.info(f"\t Total_Accuracy: {total_acc:.4f}")
+    writer.add_scalar('logs/Total_Accuracy', total_acc, epoch)
 
     mtx = confusion_matrix(labels_list, preds_list, labels=np.arange(config.num_class))
 
