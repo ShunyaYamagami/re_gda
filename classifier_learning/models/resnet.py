@@ -21,20 +21,23 @@ class GradReverse(torch.autograd.Function):
 def grad_reverse(x, lambd=1.0, reverse=True):
     return GradReverse.apply(x, lambd, reverse)
 
-def resnet(num_classes, pretrained=True):
-    model = resnet50(pretrained=pretrained)
+def resnet(num_classes, use_weights=True):
+    if use_weights:
+        model = resnet50(weights='ResNet50_Weights.DEFAULT')
+    else:
+        model = resnet50(weights=None)
     return model
 
-def get_models(num_classes, num_domains, pretrained=True):
-    base_model = resnet(num_classes, pretrained=pretrained)
+def get_models(num_classes, num_domains, use_weights=True):
+    base_model = resnet(num_classes, use_weights=use_weights)
     discriminator = Discriminator([256, 1024, 1024, num_domains], grl=True, reverse=True)
     classifier = nn.Linear(256, num_classes)
     nn.init.xavier_uniform_(classifier.weight, .1)
     nn.init.constant_(classifier.bias, 0.)  
 
     extractor = Resnet_Extractor(base_model)
-    domain_classifier = Resnet_Domain_classifier(discriminator)
     class_classifier = Resnet_Class_classifier(classifier)
+    domain_classifier = Resnet_Domain_classifier(discriminator)
 
     return extractor, class_classifier, domain_classifier
 

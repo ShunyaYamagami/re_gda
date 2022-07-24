@@ -210,7 +210,7 @@ def mix_amp_phase_and_mixup(im: Image, root, resize, mix_filenames, mix_amp=True
 
 
 
-def mask_randomly(im:Image, resize=(32,32), square_edge=20, rate=0.5) -> Image:
+def mask_randomly(im:Image, resize, square_edge=20, rate=0.5) -> Image:
     """ ランダムにマスクする """
     num_per_edge = resize[0]//square_edge + 1
     

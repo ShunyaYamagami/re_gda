@@ -65,8 +65,8 @@ class NTXentLoss(nn.Module):
         else:
             # edlsに対応する負例の影響度をさげておく
             similarity_matrix_tmp = similarity_matrix
-            edl_indexes = [[i for i, x in enumerate(edls) if x == d] for d in torch.unique(edls)][0]
-            for edl_index in edl_indexes:
+            edl_indices = [[i for i, x in enumerate(edls) if x == d] for d in torch.unique(edls)][0]
+            for edl_index in edl_indices:
                 similarity_matrix_tmp[edl_index] *= 0    # 同推定ドメインの負例に定数掛けて影響度を抑える.
             negatives = similarity_matrix_tmp[self._get_pos_neg_masks(edls, positive=False)].view(self.batch_size, -1)
 

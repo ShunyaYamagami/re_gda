@@ -17,32 +17,9 @@ from functions import *
 def second_load(fi, config, root, filename, resize, mix_filenames=None) -> Image:
     im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
     grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
-    # if config.dataset.fourier:
-        # im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 5, const_value=0)  # 位相・振幅に一定値を入れる．
-        # im = mix_amp_phase_and_mixup(im, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=True, LAMB = 0.7)
-        # im = cutmix_spectrums(im, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=2 )
 
-    # if config.dataset.jigsaw:
-    #     im = get_jigsaw(im, resize, grid)
-        # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
-        # im = cutmix_self(im, resize, grid, n_cutmix=4)
-        # im = cutmix_other(im, resize, root, mix_filenames, mix_edge_div=5, crop_part='center')
-    if config.cuda_dir == 0:
-        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
-        im = get_jigsaw(im, resize, grid)
-        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
-    elif config.cuda_dir == 1:
-        im = mix_amp_phase_and_mixup(im, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=True, LAMB = 0.7)
-        im = get_jigsaw(im, resize, grid)
-    elif config.cuda_dir == 2:
-        im = mix_amp_phase_and_mixup(im, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=False, LAMB = 0.7)
-        im = get_jigsaw(im, resize, grid)
-    elif config.cuda_dir == 3:
-        im = get_jigsaw(im, resize, grid)
-    else:
-        print("cuda未選択")
-        raise ValueError("cudaが未選択")
-
+    im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+    im = get_jigsaw(im, resize, grid)
 
     return fi, im
 
@@ -50,41 +27,21 @@ def second_load(fi, config, root, filename, resize, mix_filenames=None) -> Image
 def load(fi, config, root, filename, resize) -> Image:
     im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
     grid = random.choice(grid) if isinstance(config.dataset.grid, list) else config.dataset.grid
-    # if config.dataset.fourier:
-        # im = input_const_values(im, resize, const_abs=True, const_pha=False, n_random = resize[0] * resize[1] // 15, const_value=0 )  # 位相・振幅に一定値を入れる．
-        # im = input_random_values(im, resize, randomize_abs=False, randomize_pha=True, n_random = resize[0] * resize[1] // 10)  # 位相・振幅にランダム値を入れる．
-    # if config.dataset.jigsaw:
-        # im = get_jigsaw(im, resize, grid)
-        # im = mask_randomly(im, resize, square_edge=20, rate=0.3)
-        # im = cutmix_self(im, resize, grid, n_cutmix=4)
-    if config.cuda_dir == 0:
+
+    if config.cuda_dir == 1:
         im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
         im = get_jigsaw(im, resize, grid)
-        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
-    elif config.cuda_dir == 1:
-        im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
-        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
     elif config.cuda_dir == 2:
         im = get_jigsaw(im, resize, grid)
-        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
     elif config.cuda_dir == 3:
-        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
-    elif config.cuda_dir == 4:
-        im = get_jigsaw(im, resize, grid)
-    elif config.cuda_dir == 5:
-        pass
-    elif config.cuda_dir == 6:
         im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
         im = get_jigsaw(im, resize, grid)
-
-        # im = get_jigsaw(im, resize, grid)
+        im = mask_randomly(im, resize, square_edge=20, rate=0.3)
     else:
-        print("cuda未選択")
-        raise ValueError("cudaが未選択")
-
+        if fi == 0:
+            print("  ------ Augmentation 未選択 -----") 
 
     return fi, im
-
 
 
 class LabeledDataset(data.Dataset):
@@ -138,9 +95,10 @@ def get_transforms(config, mode):
     if config.dataset.parent == 'Digit':
         if mode == 'train':
             transform = transforms.Compose([
-                transforms.RandomResizedCrop(size=config.model.imsize),
-                transforms.Grayscale(),
-                GaussianBlur(kernel_size=int(0.3 * config.model.imsize), min=0.1, max=2.5),
+                # transforms.RandomResizedCrop(size=config.model.imsize),
+                transforms.RandomResizedCrop(size=config.model.imsize, scale=(0.08, 1.0)),
+                transforms.Grayscale(3),
+                # GaussianBlur(kernel_size=int(0.3 * config.model.imsize), min=0.1, max=2.5),
                 transforms.ToTensor(),
                 transforms.Normalize([0.5],[0.5]),
                 transforms.Lambda(lambda x: x * (torch.from_numpy(np.random.binomial(1, 0.5, (1)).astype(np.float32) * 2 - 1))),
@@ -150,7 +108,7 @@ def get_transforms(config, mode):
         elif mode == 'eval':
             transform = transforms.Compose([
                 transforms.Resize(size=config.model.imsize),
-                transforms.Grayscale(),
+                transforms.Grayscale(3),
                 transforms.ToTensor(),
                 transforms.Normalize([0.5],[0.5])]
             )
@@ -196,6 +154,7 @@ def get_transforms(config, mode):
 
 
 def get_dataset(config, dset_taple, domain_label, transform=None):
+    print(f"  ----- get dataset {dset_taple[0]} -----")
     # load train
     parent = config.dataset.parent
     dset_name = dset_taple[0]
@@ -219,7 +178,12 @@ def get_dataset(config, dset_taple, domain_label, transform=None):
     filenames = df.filename.values
     labels = df.label.values
 
-    use_idx = np.array([i for i,l in enumerate(labels) if l in dset_labels])
+    if config.dataset.parent == "Digit":
+        filenames_seq = list(range(len(filenames)))  # filenameのインデックスの連番作成
+        use_idx = sorted(random.sample(filenames_seq, config.dataset.sampling_num))  # Digitはデータ多すぎるのでランダムサンプリング
+    else:
+        use_idx = np.array([i for i,l in enumerate(labels) if l in dset_labels])
+
     filenames = filenames[use_idx]
     labels = labels[use_idx]
 

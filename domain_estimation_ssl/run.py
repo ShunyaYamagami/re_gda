@@ -2,18 +2,16 @@ import argparse
 from easydict import EasyDict
 import numpy as np
 import os
-import pandas as pd
-import torch
-from torchvision.transforms import transforms
-import yaml
+import shutil
 from time import time
-from memory_profiler import profile
+import yaml
+from tensorboardX import SummaryWriter
 
-from data_aug.gaussian_blur import GaussianBlur
 from clustering import run_clustering
 from dataset import get_datasets
 from simclr import SimCLR
-from log_functions import *
+from log_functions import log_spread_sheet, send_email, get_body_text
+from logging import getLogger, Formatter, StreamHandler, FileHandler, DEBUG
 
 
 parser = argparse.ArgumentParser(description='choose config')
@@ -24,63 +22,103 @@ parser.add_argument('--spread_message', type=str, default="")  # デフォルト
 parser.add_argument('--cuda_dir', default=-1)  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 args = parser.parse_args()
 
+        
+def set_logger_writer(config):
+    if os.path.exists(config.log_dir):
+        shutil.rmtree(config.log_dir)
+    os.makedirs(config.checkpoints_dir, exist_ok=True)
+    logger = getLogger("show_loss_accuarcy")
+    logger.setLevel(DEBUG)
+    # formatter = Formatter('%(asctime)s [%(levelname)s] \n%(message)s')
+    handlerSh = StreamHandler()
+    handlerSh.setLevel(DEBUG)
+    # handlerSh.setFormatter(formatter)
+    logger.addHandler(handlerSh)
+    handlerFile = FileHandler(os.path.join(config.log_dir, "prompts.log"))
+    # handlerFile.setFormatter(formatter)
+    handlerFile.setLevel(DEBUG)
+    logger.addHandler(handlerFile)
+    return logger
 
-def main(args):
-    start_time = time()
+def save_config_file(original_path, model_checkpoints_folder):
+    os.makedirs(model_checkpoints_folder, exist_ok=True)
+    shutil.copy(original_path, os.path.join(model_checkpoints_folder, 'config.yaml'))
+        
+def set_config(args):
     config = yaml.load(open(args.config, "r"), Loader=yaml.FullLoader)
     config = EasyDict(config)
+    # from args
     config.config_path = args.config
     config.log_dir = args.log_dir
     config.num_laps = int(args.num_laps)
     config.spread_message = args.spread_message
     config.cuda_dir = int(args.cuda_dir)
-    mail_body_texts = []
+    # set manually
+    config.dataset.target_dsets = np.array(config.dataset.dset_taples)[:,0]  # dset名のリスト
+    config.tensorboard_log_dir = os.path.join(config.log_dir, 'logs')
+    config.checkpoints_dir = os.path.join(config.log_dir, 'checkpoints')
+    config.model_path = os.path.join(config.log_dir, 'checkpoints', 'model.pth')
+    # config.logger, config.writer = set_logger_writer(config)
+    save_config_file(config.config_path, config.checkpoints_dir)
 
-    print(f"""    ---------------------------------------------------------
+    return config
+
+
+def main():
+    start_time = time()
+    config = set_config(args)
+    logger = set_logger_writer(config)
+    mail_body_texts = []
+    logger.info(f"""    
+    ===============================================
+    =============== {"_".join(config.dataset.target_dsets)} ===================
+    ===============================================
+    ---------------------------------------------------------
         cuda_dir: {config.cuda_dir}
         batch_size: {config.batch_size},  epochs: {config.epochs}
         SSL: {config.model.ssl},  base_model: {config.model.base_model}
         jigsaw: {config.dataset.jigsaw},  fourier: {config.dataset.fourier},  grid: {config.dataset.grid}
-        num_laps: {config.num_laps}, 
+        num_laps: {config.num_laps}, sampling_num: {config.dataset.sampling_num}
         log_dir: {config.log_dir}
     ---------------------------------------------------------
     """)
 
-    try:
-        print(f"\n=================  1/{config.num_laps}周目  =================")
-        config.lap = 1
-        config.pseudo_out_dim = 8
-        dataset = get_datasets(config, 'train')
-        simclr = SimCLR(dataset, config)
-        simclr.train()
+    # try:
+    logger.info(f"\n=================  1/{config.num_laps}周目  =================")
+    config.lap = 1
+    config.pseudo_out_dim = 8
+    dataset = get_datasets(config, 'train')
+    simclr = SimCLR(dataset, config, logger)
+    simclr.train()
 
-        print(f"=================  Clustering 1/{config.num_laps}  =================")
-        feats, edls_dataset, nmi, nmi_class = run_clustering(config)
-        feats, edls_dataset, nmi, nmi_class = run_clustering(config)
-        feats, edls_dataset, nmi, nmi_class = run_clustering(config)
-        log_spread_sheet(config, nmi, nmi_class)
-        mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
-            
-        # for ilap in range(2, config.num_laps + 1):  # 何周するか
-        #     config.lap = ilap
-        #     print(f"=================  {config.lap}/{config.num_laps}周目  =================")
-        #     config.edls = pd.read_csv(os.path.join(config.log_dir, 'cluster_pca_gmm.csv'), names=['domain_label'], dtype=int).domain_label.values
-        #     config.log_dir__old = config.log_dir  # simclrのdoes_load_modelだけのために設けた．
-        #     config.log_dir += f'__{config.lap}'
+    logger.info(f"=================  Clustering 1/{config.num_laps}  =================")
+    feats, edls_dataset = run_clustering(config, logger)
+    feats, edls_dataset = run_clustering(config, logger)
+    feats, edls_dataset = run_clustering(config, logger)
+    # log_spread_sheet(config, config.nmi, config.nmi_class)
+    # mail_body_texts.append(get_body_text(config, start_time, config.nmi, config.nmi_class))
+        
+    # for ilap in range(2, config.num_laps + 1):  # 何周するか
+    #     config.lap = ilap
+    #     logger.info(f"=================  {config.lap}/{config.num_laps}周目  =================")
+    #     config.edls = pd.read_csv(os.path.join(config.log_dir, 'cluster_pca_gmm.csv'), names=['domain_label'], dtype=int).domain_label.values
+    #     config.log_dir__old = config.log_dir  # simclrのdoes_load_modelだけのために設けた．
+    #     config.log_dir += f'__{config.lap}'
 
-        #     dataset = get_datasets(config, 'train')
-        #     simclr = SimCLR(dataset, config)
-        #     simclr.train(does_load_model=True)
-            
-        #     print(f"=================  Clustering {config.lap}/{config.num_laps}  =================")
-        #     feats, edls_dataset, nmi, nmi_class = run_clustering(config)
-        #     log_spread_sheet(config, nmi, nmi_class)
-        #     mail_body_texts.append(get_body_text(config, start_time, nmi, nmi_class))
-    
-        send_email(not_error=True, body_texts='\n'.join(mail_body_texts), config=config, nmi=nmi, nmi_class=nmi_class)
-    except:
-        error_message = traceback.format_exc()
-        send_email(not_error=False, error_message=error_message)
+    #     dataset = get_datasets(config, 'train')
+    #     simclr = SimCLR(dataset, config)
+    #     simclr.train(does_load_model=True)
+        
+    #     logger.info(f"=================  Clustering {config.lap}/{config.num_laps}  =================")
+    #     feats, edls_dataset, config.nmi, config.nmi_class = run_clustering(config)
+    #     log_spread_sheet(config, config.nmi, config.nmi_class)
+    #     mail_body_texts.append(get_body_text(config, start_time, config.nmi, config.nmi_class))
+
+    # send_email(not_error=True, body_texts='\n'.join(mail_body_texts), config=config, nmi=config.nmi, nmi_class=config.nmi_class)
+    # except:
+    #     error_message = traceback.format_exc()
+    #     send_email(not_error=False, error_message=error_message)
+
 
 if __name__ == "__main__":
-    main(args)
+    main()

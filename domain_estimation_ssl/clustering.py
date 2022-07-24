@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 
 from dataset import get_datasets
-
+from simclr import get_models_func
 
 def plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c):
     plt.clf()
@@ -25,7 +25,7 @@ def plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c):
     plt.savefig(os.path.join(log_dir, f'{dim_red_method}_plot.pdf'), box_inches="tight")
 
 
-def clustering_exec(config, feats, dim_red_method, clust_method, dataset, log_dir, nmi_output=False):
+def clustering_exec(config, logger, feats, dim_red_method, clust_method, dataset, log_dir):
     if dim_red_method == 'tsne':
         dim_reduce = TSNE(n_components=2, perplexity=30, verbose=1, n_jobs=3)
     elif dim_red_method == 'pca':
@@ -52,51 +52,40 @@ def clustering_exec(config, feats, dim_red_method, clust_method, dataset, log_di
     # plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c=domain_cluster, outname=f'{dim_red_method}_cluster.pdf')
     # plot_pdf(feats_dim_reduced, dim_red_method, log_dir, c=class_cluster, outname=f'{dim_red_method}_cluster_class.pdf')
 
-    if nmi_output:
-        # domain_clusterが0,1逆になってもNMIは変わらない.
-        nmi = NMI(dataset.domain_labels, domain_cluster)
-        nmi_class = NMI(dataset.labels, class_cluster)
-        if len(config.dataset.target_dsets) == 2:
-            domain_accuracy = np.max([accuracy_score(dataset.domain_labels, domain_cluster), 1 - accuracy_score(dataset.domain_labels, domain_cluster)])
-        else:
-            domain_accuracy = -1
-            
-        with open(os.path.join(log_dir, "nmi.txt"), 'w') as f:
-            f.write(f'nmi:{nmi}\n')
-        with open(os.path.join(log_dir, "nmi_class.txt"), "w") as f:
-            f.write(f'nmi_class:{nmi_class}\n')
-        with open(os.path.join(log_dir, "domain_accuracy.txt"), "w") as f:
-            f.write(f'domain_accuracy:{nmi_class}\n')
-        print(f'nmi:{nmi}')
-        print(f'nmi class:{nmi_class}')
-        print(f'domain_accuracy:{domain_accuracy}')
+    # domain_clusterが0,1逆になってもNMIは変わらない.
+    nmi = NMI(dataset.domain_labels, domain_cluster)
+    nmi_class = NMI(dataset.labels, class_cluster)
+    if len(config.dataset.target_dsets) == 2:
+        domain_accuracy = np.max([accuracy_score(dataset.domain_labels, domain_cluster), 1 - accuracy_score(dataset.domain_labels, domain_cluster)])
+    else:
+        domain_accuracy = -1
+        
+    with open(os.path.join(log_dir, "nmi.txt"), 'w') as f:
+        f.write(f'nmi:{nmi}\n')
+    with open(os.path.join(log_dir, "nmi_class.txt"), "w") as f:
+        f.write(f'nmi_class:{nmi_class}\n')
+    with open(os.path.join(log_dir, "domain_accuracy.txt"), "w") as f:
+        f.write(f'domain_accuracy:{domain_accuracy}\n')
+    logger.info(f'nmi:{nmi}')
+    logger.info(f'nmi class:{nmi_class}')
+    logger.info(f'domain_accuracy:{domain_accuracy}')
+    config.nmi, config.nmi_class, config.domain_accuracy = nmi, nmi_class, domain_accuracy
 
     dataset.edls = domain_cluster
     return dataset, nmi, nmi_class
 
 
-def run_clustering(config):
-    if config.dataset.parent == 'Digit':
-        model = Encoder(config.model.ssl)
-    elif config.dataset.parent == 'Office31':
-        if config.model.base_model == 'alexnet':
-            model = AlexSimCLR(config.model.out_dim)
-        elif config.model.base_model == 'encoder':
-            model = Encoder(input_dim=3, out_dim=config.model.out_dim)
-        else:
-            model = ResNetSimCLR(config.model.base_model, config.model.out_dim)
-
+def run_clustering(config, logger):
     if isinstance(config.dataset.grid, list):
         config.dataset.grid = min(config.dataset.grid)
 
     dataset = get_datasets(config, 'eval')
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=56, shuffle=False)
 
+    model = get_models_func(config, 'cuda')
     model.eval()
-    model_path = os.path.join(config.log_dir, "checkpoints", "model.pth")
-    print(f"  -----  Load Model from {config.log_dir} for clustering  -----")
-    model.load_state_dict(torch.load(model_path))
-    model.cuda()
+    logger.info(f"  -----  Load Model from {config.model_path} for clustering  -----")
+    model.load_state_dict(torch.load(config.model_path))
 
     feats = []
     with torch.no_grad():
@@ -110,7 +99,7 @@ def run_clustering(config):
     ### TSNE clustering
     # dataset, domain_cluster = clustering_exec(feats, 'tsne', 'kmeans', dataset, config.log_dir)
     ### PCA clustering
-    edls_dataset, nmi, nmi_class = clustering_exec(config, feats, 'pca', 'gmm', dataset, config.log_dir, nmi_output=True)
+    edls_dataset = clustering_exec(config, logger, feats, 'pca', 'gmm', dataset, config.log_dir)
 
-    return feats, edls_dataset, nmi, nmi_class
+    return feats, edls_dataset
 

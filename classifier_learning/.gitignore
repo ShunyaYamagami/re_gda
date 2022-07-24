@@ -13,3 +13,4 @@ analyze/
 *.pdf
 *.out
 *.sh
+*.csv

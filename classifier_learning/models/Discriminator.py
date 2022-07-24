@@ -1,7 +1,5 @@
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.utils.model_zoo as model_zoo
 import torch
+import torch.nn as nn
 
 class GradReverse(torch.autograd.Function):
     @staticmethod
@@ -20,14 +18,15 @@ class GradReverse(torch.autograd.Function):
 def grad_reverse(x, lambd=1.0, reverse=True):
     return GradReverse.apply(x, lambd, reverse)
 
+
 class Discriminator(nn.Module):
     def __init__(self, dims, grl=True, reverse=True):
         if len(dims) != 4:
             raise ValueError("Discriminator input dims should be three dim!")
-        super(Discriminator, self).__init__()
+        super().__init__()
         self.grl = grl
         self.reverse = reverse
-        self.model = nn.Sequential(
+        self.discriminate_layer = nn.Sequential(
             nn.Linear(dims[0], dims[1]),
             nn.ReLU(),
             nn.Dropout(0.5),
@@ -40,5 +39,5 @@ class Discriminator(nn.Module):
     def forward(self, x, constant):
         if self.grl:
             x = grad_reverse(x, constant, self.reverse)
-        x = self.model(x)
+        x = self.discriminate_layer(x)
         return x

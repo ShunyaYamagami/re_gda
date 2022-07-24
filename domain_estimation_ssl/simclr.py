@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
-from memory_profiler import profile
 
 from models.baseline_encoder import Encoder
 from models.alexnet_simclr import AlexSimCLR
@@ -29,24 +28,38 @@ except:
 torch.manual_seed(0)
 
 
-def _save_config_file(original_path, model_checkpoints_folder):
-    if not os.path.exists(model_checkpoints_folder):
-        os.makedirs(model_checkpoints_folder)
-        shutil.copy(original_path, os.path.join(model_checkpoints_folder, 'config.yaml'))
+def get_models_func(config, device):
+    if config.dataset.parent == "Digit":
+        if config.model.base_model == 'encoder':
+            model = Encoder(config.model.ssl, input_dim=3, out_dim=config.model.out_dim, pseudo_out_dim=config.pseudo_out_dim)
+        else:
+            print("  ------  モデル未選択 -----")
+    elif config.dataset.parent == "Office31":
+        if config.model.base_model == "alexnet":
+            model = AlexSimCLR(config.model.out_dim)
+        elif config.model.base_model == 'encoder':
+            model = Encoder(config.model.ssl, input_dim=3, out_dim=config.model.out_dim, pseudo_out_dim=config.pseudo_out_dim)
+        else:
+            model = ResNetSimCLR(config.model.base_model, config.model.out_dim)
+    
+    model = model.to(device)
+    return model
+
 
 
 class SimCLR(object):
-    def __init__(self, dataset, config):
+    def __init__(self, dataset, config, logger):
         self.config = config
+        self.logger = logger
         self.device = self._get_device()
-        self.writer = SummaryWriter(log_dir=config.log_dir)
+        self.writer = SummaryWriter(log_dir=config.tensorboard_log_dir)
         self.dataset = dataset
         self.nt_xent_criterion = NTXentLoss(config, self.device, config.batch_size, **config.loss)
 
 
     def _get_device(self):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        print("Running on:", device)
+        self.logger.info(f"Running on: {device}")
         return device
 
 
@@ -86,21 +99,9 @@ class SimCLR(object):
 
     def train(self, does_load_model=False):
         train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=self.config.batch_size, shuffle=True, num_workers=2, drop_last=True)
-        # save config file
-        model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
-        _save_config_file(self.config.config_path, model_checkpoints_folder)
 
-        if self.config.dataset.parent == "Digit":
-            model = Encoder(self.config.model.ssl).to(self.device)
-        elif self.config.dataset.parent == "Office31":
-            if self.config.model.base_model == "alexnet":
-                model = AlexSimCLR(self.config.model.out_dim).to(self.device)
-            elif self.config.model.base_model == 'encoder':
-                model = Encoder(self.config.model.ssl, input_dim=3, out_dim=self.config.model.out_dim, pseudo_out_dim=self.config.pseudo_out_dim).to(self.device)
-            else:
-                model = ResNetSimCLR(self.config.model.base_model, self.config.model.out_dim).to(self.device)
-
-        ### ADD 2回目任意で1回目の重みをロードしてファインチューニングできればと．
+        model = get_models_func(self.config, self.device)
+        # ADD 2回目任意で1回目の重みをロードしてファインチューニングできればと．
         if does_load_model:
             model = self._load_pre_trained_weights(self.config, model)
             # de-fine tuningみたいな
@@ -108,27 +109,25 @@ class SimCLR(object):
             #     for param in layers.parameters():
             #         param.requires_grad = False
             
+        # set criterion
         if self.config.model.ssl == 'simsiam':
             model.ssl = self.config.model.ssl
             criterion = nn.CosineSimilarity(dim=1).to(self.device)  # コサイン類似度
         if self.config.model.ssl == 'random_pseudo':
             model.ssl = self.config.model.ssl
             criterion = nn.BCEWithLogitsLoss().to(self.device)
-            
+        # set optimizer
         optimizer = torch.optim.Adam(model.parameters(), 1e-3, weight_decay=eval(self.config.weight_decay))
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0, last_epoch=-1)
         if apex_support and self.config.fp16_precision:
             model, optimizer = amp.initialize(model, optimizer, opt_level='O2', keep_batchnorm_fp32=True)
 
         n_iter = 0
-        valid_n_iter = 0
-        best_valid_loss = np.inf
-
         for epoch_counter in range(self.config.epochs):
             for xis, xjs, edls in train_loader:
-                optimizer.zero_grad()
-
                 xis, xjs, edls = xis.to(self.device), xjs.to(self.device), edls.to(self.device)
+
+                optimizer.zero_grad()
 
                 if self.config.model.ssl == 'simclr':
                     loss = self._simclr_step(model, xis, xjs, edls)
@@ -138,7 +137,7 @@ class SimCLR(object):
                     loss = self._random_pseudo_step(model, xis, criterion, edls)
 
                 if n_iter % self.config.log_every_n_steps == 0:
-                    print(f'Epoch:{epoch_counter}/{self.config.epochs}({n_iter}) loss:{loss}')
+                    self.logger.info(f'Epoch:{epoch_counter}/{self.config.epochs}({n_iter}) loss:{loss}')
                     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
 
                 if apex_support and self.config.fp16_precision:
@@ -151,7 +150,7 @@ class SimCLR(object):
                 scheduler.step()
                 n_iter += 1
 
-            torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
+            torch.save(model.state_dict(), self.config.model_path)
 
 
     def _load_pre_trained_weights(self, config, model):
@@ -160,11 +159,11 @@ class SimCLR(object):
                 load_model_dir = config.log_dir
             else:
                 load_model_dir = config.log_dir__old
-            print(f"  ----- Loaded pre-trained model from {load_model_dir} for SSL  -----")
+            self.logger.info(f"  ----- Loaded pre-trained model from {load_model_dir} for SSL  -----")
             state_dict = torch.load(os.path.join('./', load_model_dir, 'checkpoints', 'model.pth'))
             model.load_state_dict(state_dict)
         except FileNotFoundError:
-            print("  ----- Pre-trained weights not found. Training from scratch.  -----")
+            self.logger.info("  ----- Pre-trained weights not found. Training from scratch.  -----")
 
         return model
 

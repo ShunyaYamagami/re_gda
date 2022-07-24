@@ -19,19 +19,19 @@ from email.utils import formatdate
 import traceback
 
 
-LOG_TEXT = 'SimSiam'
+LOG_TEXT = 'class_classifier'
 
 
 def config_to_execute(DATA_DOMAIN, PARENT, N_CUDA, log_dir_opt):
+    print("===============================================")
+    print(f'==============  {DATA_DOMAIN}  ==============')
+    print("===============================================")
     # set config / log directory
-    if PARENT == 'Digit':
-        domain_initials = DATA_DOMAIN
-    elif PARENT == 'Office31':
-        domain_initials = "".join([dname[0] for dname in DATA_DOMAIN.split('_')])
+    domain_initials = "".join([dname[0] for dname in DATA_DOMAIN.split('_')])
     CONFIG_FILE = os.path.join(os.path.join('config', PARENT, f"{domain_initials}.yaml"))
     config = yaml.load(open(CONFIG_FILE, "r"), Loader=yaml.FullLoader)
     config = EasyDict(config)
-    log_dir = os.path.join("record", f"{config.dataset.parent}", f"CUDA{N_CUDA}", f"{domain_initials}_{config.model.base_model}{log_dir_opt}")
+    log_dir = os.path.join("record", f"{config.parent}", f"CUDA{N_CUDA}", f"{domain_initials}_{config.model}{log_dir_opt}")
 
     return config, CONFIG_FILE, log_dir
 

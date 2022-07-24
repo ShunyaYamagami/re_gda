@@ -1,0 +1,27 @@
+batch_size: 256
+epochs: 50
+eval_every_n_epochs: 1
+fine_tune_from: None
+log_every_n_steps: 50
+weight_decay: 10e-6
+fp16_precision: False
+
+dataset:
+  parent: "Digit"
+  dset_taples: [['svhn', [0,1,2,3,4,5,6,7,8,9]],
+                ['synth', [0,1,2,3,4,5,6,7,8,9]]]
+  jigsaw: True
+  fourier: False
+  grid: 3
+  sampling_num: 3000
+model:
+  out_dim: 256
+  base_model: "encoder"
+  # base_model: "resnet18"
+  # base_model: "resnet50"
+  imsize: 96
+  ssl: 'simclr'
+  # ssl: 'random_pseudo'
+loss:
+  temperature: 0.5
+  use_cosine_similarity: True

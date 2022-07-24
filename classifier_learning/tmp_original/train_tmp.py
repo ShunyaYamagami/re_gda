@@ -104,8 +104,8 @@ def dann_OS(feature_extractor, class_classifier, domain_classifier, class_criter
         # setup optimizer
         optimizer.zero_grad()
 
-        source_labels = domain1
-        target_labels = domain2
+        source_labels = domain1  # 最初からそう代入してろよ. "labels"なのにクラスラベルじゃなくてドメインラベルであることに注意.
+        target_labels = domain2  # 最初からそう代入してろよ. "labels"なのにクラスラベルじゃなくてドメインラベルであることに注意.
 
         if epoch < params.change_epoch:
 
