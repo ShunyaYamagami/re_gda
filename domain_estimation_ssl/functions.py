@@ -5,6 +5,8 @@ from PIL import Image
 import cv2
 import pandas as pd
 import itertools
+import math
+
 
 def get_jigsaw(im:Image, resize, grid) -> Image:
     s = int(resize[0] / grid)
@@ -109,10 +111,11 @@ def input_random_values(im:Image, resize, randomize_abs=True, randomize_pha=Fals
                 img_abs[noize_pixel] = normal
         if randomize_pha:
             mean, std = img_pha.mean(), img_pha.std()
-            normals = np.random.normal(mean, std, size=n_random)  # 同じ平均・標準偏差の正規分布に従う乱数をn_random個作成
+            # normals = np.random.normal(mean, std, size=n_random)  # 同じ平均・標準偏差の正規分布に従う乱数をn_random個作成
+            random_values = [random.random() * math.pi for _ in range(n_random)]
             noize_pixels = [(random.randint(0, resize[0]-1), random.randint(0, resize[0]-1)) for i in range(n_random)]  # ランダムな値を入れるピクセル(x, y)
-            for (noize_pixel, normal) in zip(noize_pixels, normals):
-                img_pha[noize_pixel] = normal
+            for (noize_pixel, random_value) in zip(noize_pixels, random_values):
+                img_pha[noize_pixel] = random_value
 
         img_ifft = spectrums_ifft(img_abs, img_pha)
         fourier_img.append(img_ifft)
@@ -126,7 +129,7 @@ def input_random_values(im:Image, resize, randomize_abs=True, randomize_pha=Fals
 
 def get_all_filenames(config):
     root = os.path.join("/nas/data/syamagami/GDA/data/", config.dataset.parent)
-    target_text_trains = [os.path.join(root, f"{each_dset_name}.txt") for each_dset_name in config.dataset.target_dsets]  # mix用.mixするにはdslr_webcamだったら2つのdsetのfilenameを一遍に取得しなくてはならない
+    target_text_trains = [os.path.join(root, f"{each_dset_name}.txt") for each_dset_name in config.target_dsets_name.split('_')]  # mix用.mixするにはdslr_webcamだったら2つのdsetのfilenameを一遍に取得しなくてはならない
 
     df_target = [pd.read_csv(att, sep=" ", names=("filename", "label")) for att in target_text_trains]  # mix用.mixするにはdslr_webcamだったら2つのdsetのfilenameを一遍に取得しなくてはならない
     df_target = pd.concat(df_target)
@@ -146,7 +149,7 @@ def get_mix_filenames(config, edls):
     return mix_filenames
     
 
-
+### 振幅/位相を他画像とMix
 def mix_amp_phase_and_mixup(im: Image, root, resize, mix_filenames, mix_amp=True, mix_pha=False, mixup=True, LAMB = 0.7) -> Image:
     """ ランダムな他2つの画像と位相/振幅をMixし, その後ピクセル空間でMixUp
         input: 
@@ -238,7 +241,7 @@ def cutmix_self(im:Image, resize, grid=3, n_cutmix=2) -> Image:
 
 
 
-def cutmix_other(im:Image, resize, root, mix_filenames, mix_edge_div=5, crop_part='center'):
+def cutmix_other(im:Image, resize, root, mix_filenames, mix_edge_div=5, crop_part='center') -> Image:
     """ 他の画像と中心部分をcutmixする. """
     mix_im = Image.open(os.path.join(root, random.choice(mix_filenames))).convert("RGB").resize(resize)
     mix_edge = resize[0] // mix_edge_div
@@ -257,7 +260,7 @@ def cutmix_other(im:Image, resize, root, mix_filenames, mix_edge_div=5, crop_par
 
 
 
-def cutmix_spectrums(im:Image, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=2):
+def cutmix_spectrums(im:Image, resize, root, mix_filenames, does_mix_amp=False, does_mix_pha=True, mix_edge_div=2) -> Image:
     """ 他の画像と振幅/位相のスペクトルをcutmixする. """
     square = resize[0] // mix_edge_div
     lt, rb = resize[0] - square, resize[0] + square
@@ -287,4 +290,42 @@ def cutmix_spectrums(im:Image, resize, root, mix_filenames, does_mix_amp=False, 
 
 
 
+def leave_amp_pha_big_small(im:Image, amp_pha='amp', big_small='big') -> Image:
+    """ 位相/振幅の大きな/小さな所だけ残す
+        amp_pha: 振幅残すか位相残すか
+        big_small: 大きな部分を残すか小さな部分を残すか
+    """
+    im = np.array(im).transpose(2, 0, 1)  # to (C, W, H)
+    
+    fourier_img = []
+    for img in im:
+        # フーリエ変換
+        img_fft = np.fft.fft2(img)
+        img_abs = np.abs(img_fft)
+        img_pha = np.angle(img_fft)
 
+        if amp_pha=='amp' and big_small=='big':
+            # 大きな振幅だけ残す  全体にノイズが走っただけ？
+            img_abs = np.where(img_abs < np.percentile(img_abs, 98), 0, img_abs)
+        if amp_pha=='amp' and big_small=='small':
+            # 小さな振幅だけ残す  背景の色が変わっただけ？
+            img_abs = np.where(img_abs > np.percentile(img_abs, 99.98), 0, img_abs)
+        if amp_pha=='pha' and big_small=='big':
+            # 大きな位相だけ残す
+            img_pha = np.where(img_pha < np.percentile(img_pha, 2), 0, img_pha)
+        if amp_pha=='pha' and big_small=='small':
+            # 小さな位相だけ残す  画面が暗くなっただけのような
+            img_pha = np.where(img_pha > np.percentile(img_pha, 98), 0, img_pha)
+
+        # 逆フーリエ変換
+        img_ifft = img_abs * (np.e ** (1j * img_pha))
+        img_ifft = np.fft.ifft2(img_ifft).real
+        fmax, fmin = img_ifft.max(), img_ifft.min()
+        img_ifft = np.uint8(np.array([[(f-fmin)/(fmax-fmin) for f in img] for img in img_ifft])*255)
+
+        fourier_img.append(img_ifft)
+
+    fourier_img = np.array(fourier_img).transpose(1, 2, 0) # to (W, H, C)
+    fourier_img = Image.fromarray(fourier_img)
+
+    return fourier_img

@@ -1,18 +1,16 @@
 import argparse
 from easydict import EasyDict
-import numpy as np
-import os
-import shutil
 from time import time
-import torch
+import numpy as np
+import pandas as pd
+import os
 import yaml
-from tensorboardX import SummaryWriter
 
 from clustering import run_clustering
 from dataset import get_datasets
 from simclr import SimCLR
 from log_functions import log_spread_sheet, send_email, get_body_text
-from logging import getLogger, Formatter, StreamHandler, FileHandler, DEBUG
+from util import get_device, set_logger_writer, save_config_file
 
 
 parser = argparse.ArgumentParser(description='choose config')
@@ -21,40 +19,10 @@ parser.add_argument('--log_dir', type=str, default="record")  # デフォルト�
 parser.add_argument('--num_laps', default=1)  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 parser.add_argument('--spread_message', type=str, default="")  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 parser.add_argument('--cuda_dir', default=-1)  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
+parser.add_argument('--test_counter', default=0)  # デフォルトのlog_dirの後ろに文字や数字指定して保存フォルダの重複を防ぐ．もっと良いlog_dirの指定方法がある気がする．
 args = parser.parse_args()
 
 
-def get_device():
-    """ GPU or CPU """
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print("Running on:", device)
-    return device
-
-def set_logger_writer(config):
-    if os.path.exists(config.log_dir):
-        shutil.rmtree(config.log_dir)
-    os.makedirs(config.checkpoints_dir, exist_ok=True)
-    logger = getLogger("show_loss_accuarcy")
-    logger.setLevel(DEBUG)
-    # formatter = Formatter('%(asctime)s [%(levelname)s] \n%(message)s')
-    handlerSh = StreamHandler()
-    handlerSh.setLevel(DEBUG)
-    # handlerSh.setFormatter(formatter)
-    logger.addHandler(handlerSh)
-    handlerFile = FileHandler(os.path.join(config.log_dir, "prompts.log"))
-    # handlerFile.setFormatter(formatter)
-    handlerFile.setLevel(DEBUG)
-    logger.addHandler(handlerFile)
-    return logger
-
-def save_config_file(config, original_path, model_checkpoints_folder):
-    os.makedirs(model_checkpoints_folder, exist_ok=True)
-    shutil.copy(original_path, os.path.join(model_checkpoints_folder, 'config.yaml'))
-    config_list = []
-    for k,v in config.items():
-        config_list.append(f"{k}: {v}\n")
-    with open(os.path.join(model_checkpoints_folder, "config.txt"), 'w') as f:
-        f.writelines(config_list)
 
 def set_config(args):
     config = yaml.load(open(args.config, "r"), Loader=yaml.FullLoader)
@@ -65,16 +33,53 @@ def set_config(args):
     config.num_laps = int(args.num_laps)
     config.spread_message = args.spread_message
     config.cuda_dir = int(args.cuda_dir)
+    config.test_counter = int(args.test_counter)
     # set manually
-    config.dataset.target_dsets = np.array(config.dataset.dset_taples)[:,0]  # dset名のリスト
-    config.tensorboard_log_dir = os.path.join(config.log_dir, 'logs')
-    config.checkpoints_dir = os.path.join(config.log_dir, 'checkpoints')
-    config.model_path = os.path.join(config.log_dir, 'checkpoints', 'model.pth')
-    # config.logger, config.writer = set_logger_writer(config)
     config.device = get_device()
-    save_config_file(config, config.config_path, config.checkpoints_dir)
+    if 'sampling_num' not in config.dataset.keys():
+        config.dataset.sampling_num = -1
+    # dirs
+    config.log_dir_origin = config.log_dir
+    config.target_dsets_name = "_".join(np.array(config.dataset.dset_taples, dtype=object)[:,0])  # dset名のリスト
+    config.checkpoints_dir = os.path.join(config.log_dir, 'checkpoints')
 
+    save_config_file(config, config.config_path, config.checkpoints_dir)
     return config
+
+
+def random_pseudo_laps(config, logger, dataset):
+    if config.test_counter == 0:
+        conv_edls = "int"
+        switch_dataset = True
+    elif config.test_counter == 1:
+        conv_edls = "int"
+        switch_dataset = False
+    elif config.test_counter == 2:
+        conv_edls = "float"
+        switch_dataset = True
+    elif config.test_counter == 3:
+        conv_edls = "random"
+        switch_dataset = False
+    elif config.test_counter == 4:
+        conv_edls = "random"
+        switch_dataset = True
+
+    ### edlsを整数にするか小数のままか, 完全ランダムなedlsにするか否か
+    if conv_edls == 'int':
+        config.edls = np.round(config.edls)  # 整数に直す
+    elif conv_edls == 'float':
+        config.edls = config.edls  # 整数に直す
+    elif conv_edls == 'random':
+        config.edls = np.random.randint(0, 2, size=(len(dataset.edls), config.model.out_dim))  # 完全ランダムにする
+    ### datasetを切り替えるか否か
+    if switch_dataset:
+        dataset = get_datasets(config, logger, 'train')  # datasetを切り替える
+    else:
+        dataset.edls = config.edls  # datasetを切り替えない
+    
+    logger.info(f"conv_edls: {conv_edls},  switch_dataset: {switch_dataset}")
+    
+    return config, dataset
 
 
 def main():
@@ -82,55 +87,75 @@ def main():
     config = set_config(args)
     logger = set_logger_writer(config)
     mail_body_texts = []
+
+    # if config.cuda_dir == 0:
+    #     config.model.out_dim = 4
+    # elif config.cuda_dir == 1:
+    #     config.model.out_dim = 8
+    # elif config.cuda_dir == 2:
+    #     config.model.out_dim = 16
+    # elif config.cuda_dir == 3:
+    #     config.model.out_dim = 32
+    # elif config.cuda_dir == 4:
+    #     config.model.out_dim = 64
+    # elif config.cuda_dir == 5:
+    #     config.model.out_dim = 128
+
     logger.info(f"""    
     ===============================================
-    ========== {"_".join(config.dataset.target_dsets)} ==============
+    ==============  {config.target_dsets_name}  ==============
     ===============================================
     ---------------------------------------------------------
         cuda_dir: {config.cuda_dir}
-        batch_size: {config.batch_size},  epochs: {config.epochs}
-        SSL: {config.model.ssl},  base_model: {config.model.base_model}
-        jigsaw: {config.dataset.jigsaw},  fourier: {config.dataset.fourier},  grid: {config.dataset.grid}
-        num_laps: {config.num_laps}, sampling_num: {config.dataset.sampling_num}
+        train    batch_size: {config.batch_size},  epochs: {config.epochs}
+        model    SSL: {config.model.ssl},  base_model: {config.model.base_model},  out_dim: {config.model.out_dim},
+        dataset  grid: {config.dataset.grid},  sampling_num: {config.dataset.sampling_num}
+        other    num_laps: {config.num_laps},  test_counter: {config.test_counter}
         log_dir: {config.log_dir}
+        spread_message: {config.spread_message}
     ---------------------------------------------------------
     """)
 
-    # try:
-    logger.info(f"\n=================  1/{config.num_laps}周目  =================")
+    logger.info(f"\n=================  Training 1/{config.num_laps}周目  =================")
     config.lap = 1
-    config.pseudo_out_dim = 8
-    dataset = get_datasets(config, 'train')
+    dataset = get_datasets(config, logger, 'train')
     simclr = SimCLR(dataset, config, logger)
     simclr.train()
 
     logger.info(f"=================  Clustering 1/{config.num_laps}  =================")
-    feats, edls_dataset = run_clustering(config, logger)
-    feats, edls_dataset = run_clustering(config, logger)
-    feats, edls_dataset = run_clustering(config, logger)
-    # log_spread_sheet(config, config.nmi, config.nmi_class)
-    # mail_body_texts.append(get_body_text(config, start_time, config.nmi, config.nmi_class))
+    run_clustering(config, logger)
+    run_clustering(config, logger)
+    run_clustering(config, logger)
         
     # for ilap in range(2, config.num_laps + 1):  # 何周するか
     #     config.lap = ilap
-    #     logger.info(f"=================  {config.lap}/{config.num_laps}周目  =================")
-    #     config.edls = pd.read_csv(os.path.join(config.log_dir, 'cluster_pca_gmm.csv'), names=['domain_label'], dtype=int).domain_label.values
-    #     config.log_dir__old = config.log_dir  # simclrのdoes_load_modelだけのために設けた．
-    #     config.log_dir += f'__{config.lap}'
+    #     logger.info(f"\n=================  Training {config.lap}/{config.num_laps}周目  =================")
+    #     if config.model.ssl != 'random_pseudo':
+    #         load_edls_path = os.path.join(config.log_dir, f'{config.target_dsets_name}_edls.csv')
+    #         logger.info(f"  -----  Load EDLs from {load_edls_path}  -----")
+    #         config.edls = np.loadtxt(load_edls_path, delimiter=",")
+    #     else:
+    #         load_edls_path = os.path.join(config.log_dir, f'sigmoid_pseudo.csv')
+    #         logger.info(f"  -----  Load EDLs from {load_edls_path}  -----")
+    #         config.edls = np.loadtxt(load_edls_path, delimiter=",")
+    #     config.log_dir = os.path.join(config.log_dir_origin, f"lap{config.lap}")
+    #     config.checkpoints_dir = os.path.join(config.log_dir, 'checkpoints')
+    #     os.makedirs(config.checkpoints_dir, exist_ok=True)
+       
 
-    #     dataset = get_datasets(config, 'train')
-    #     simclr = SimCLR(dataset, config)
+    #     ## dataset = get_datasets(config, logger, 'train')  # datasetを切り替える
+    #     config, dataset = random_pseudo_laps(config, logger, dataset)
+    #     simclr = SimCLR(dataset, config, logger)
     #     simclr.train(does_load_model=True)
+    #     # simclr.train(does_load_model=False)  ## 多分datasetの内容が変わるからモデルをロードしない方が良いと思う.
         
     #     logger.info(f"=================  Clustering {config.lap}/{config.num_laps}  =================")
-    #     feats, edls_dataset, config.nmi, config.nmi_class = run_clustering(config)
-    #     log_spread_sheet(config, config.nmi, config.nmi_class)
-    #     mail_body_texts.append(get_body_text(config, start_time, config.nmi, config.nmi_class))
+    #     run_clustering(config, logger)
+    #     run_clustering(config, logger)
+    #     run_clustering(config, logger)
+
 
     # send_email(not_error=True, body_texts='\n'.join(mail_body_texts), config=config, nmi=config.nmi, nmi_class=config.nmi_class)
-    # except:
-    #     error_message = traceback.format_exc()
-    #     send_email(not_error=False, error_message=error_message)
 
 
 if __name__ == "__main__":

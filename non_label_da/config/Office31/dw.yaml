@@ -1,0 +1,42 @@
+batch_size: 256
+epochs: 300
+change_epoch: 60
+change_epoch2: 130
+log_every_n_steps: 50
+eval_every_n_epochs: 1
+fine_tune_from: None
+weight_decay: 10e-6
+fp16_precision: False
+
+# dataset:
+num_class: 30
+num_domain: 2
+parent: "Office31"
+dset_taples: [['dslr', [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]],
+              ['webcam', [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]]]
+grid: 3
+
+# model:
+out_dim: 64
+base_model: "encoder"
+# base_model: "resnet18"
+# base_model: "resnet50"
+imsize: 32
+ssl: 'simclr'
+# ssl: 'random_pseudo'
+
+### loss
+loss:
+  temperature: 0.5
+  use_cosine_similarity: True
+prior: [0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.033, 0.33]
+prior_weight: 1
+theta: 1
+
+### optimizer
+# optim: "momentum"
+optim: "Adam"
+lr: 0.001
+lr_weight: 1.0
+next_lr : 0.001
+

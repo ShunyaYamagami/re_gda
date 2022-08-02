@@ -19,8 +19,6 @@ import traceback
 
 def log_spread_sheet(config, nmi, nmi_class):
   spread_message = f'{config.spread_message}__{config.lap}'
-  # data_domain = '_'.join(np.array(config.dataset.dset_taples, dtype=object)[:,0])
-  data_domain = '_'.join(config.dataset.target_dsets)
 
   # connect to Spread Sheet
   KEY_JSON_FILE = '../domainestimation-cd0e815895a3.json'
@@ -33,12 +31,10 @@ def log_spread_sheet(config, nmi, nmi_class):
   # log on next row of Spread Sheet
   next_row = len(sheet.col_values(1)) + 1  # spread sheetの最終行+1行目
   update_dict = {
-    'domain': data_domain,
+    'domain': config.target_dsets_name,
     'base_model': config.model.base_model,
     'batch_size': config.batch_size,
     'epochs': config.epochs,
-    'jigsaw': config.dataset.jigsaw,
-    'fourier': config.dataset.fourier,
     'bikou': spread_message,
     'NMI': round(nmi, 5),
     'NMI_Class': round(nmi_class, 5),
@@ -109,18 +105,14 @@ def send_email(
 
 
 def get_body_text(config, start_time, nmi, nmi_class):
-    # data_domain = '_'.join(np.array(config.dataset.dset_taples, dtype=object)[:,0])
-    data_domain = '_'.join(config.dataset.target_dsets)
-    
     mail_body_text = f"""
-    ==========  {data_domain}  {config.lap}/{config.num_laps}周目  ==========
+    ==========  {config.target_dsets_name}  {config.lap}/{config.num_laps}周目  ==========
         実行時間: {(time() - start_time)/60:.2f} 分
         nmi: {round(nmi, 5)},  nmi_class: {round(nmi_class, 5)},  
         ------------------------------------------------------------------------
         batch_size: {config.batch_size},  epochs: {config.epochs},  
         SSL: {config.model.ssl},  base_model: {config.model.base_model},  
-        jigsaw:{config.dataset.jigsaw}, fourier:{config.dataset.fourier},  grid: {config.dataset.grid},  
-        num_laps: {config.num_laps},  
+        grid: {config.dataset.grid},  num_laps: {config.num_laps},  
         ------------------------------------------------------------------------
     """
 

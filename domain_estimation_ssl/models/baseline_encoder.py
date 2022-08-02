@@ -4,11 +4,11 @@ from models.grl import ReverseLayerF
 
 
 class Encoder(nn.Module):
-    def __init__(self, ssl='simclr', input_dim=1, out_dim=64, pred_dim=128, pseudo_out_dim=8):
+    def __init__(self, config, input_dim=1, pred_dim=128):
         super().__init__()
-        self.ssl = ssl
+        self.ssl = config.model.ssl
         self.input_dim = input_dim
-        self.out_dim = out_dim
+        self.out_dim = config.model.out_dim
         self.pred_dim = pred_dim
 
         # encorder f
@@ -33,20 +33,19 @@ class Encoder(nn.Module):
         self.projector = nn.Sequential(
             nn.Linear(64, 64),
             nn.BatchNorm1d(64),
-            nn.Linear(64, out_dim),
+            nn.Linear(64, self.out_dim),
         )
 
         # Predictor MLP -> p
         self.predictor = nn.Sequential(
-            nn.Linear(out_dim, pred_dim, bias=False),
+            nn.Linear(self.out_dim, pred_dim, bias=False),
             nn.BatchNorm1d(pred_dim),
             nn.ReLU(inplace=True),
-            nn.Linear(pred_dim, out_dim) # output layer
+            nn.Linear(pred_dim, self.out_dim) # output layer
         )
 
-        self.sig_pseudo = nn.Sequential(
-            nn.Linear(64, pseudo_out_dim),
-            nn.BatchNorm1d(pseudo_out_dim),
+        self.sigmoid_pseudo = nn.Sequential(
+            nn.Linear(64, self.out_dim),
             nn.Sigmoid(),
         )
 
@@ -54,16 +53,17 @@ class Encoder(nn.Module):
     def forward(self, x):
         x = self.encorder(x)
         h = torch.mean(x, dim=[2, 3])  # embedding
-        z = self.projector(h)
 
         if self.ssl == 'simclr':
+            z = self.projector(h)
             return h, z
         elif self.ssl == 'simsiam':
+            z = self.projector(h)
             p = self.predictor(z)
             return h, z, p
         elif self.ssl == 'random_pseudo':
-            sig_pseudo = self.sig_pseudo(h)
-            return sig_pseudo
+            sigmoid_pseudo = self.sigmoid_pseudo(h)
+            return h, sigmoid_pseudo
         else:
             print("ssl設定ミス")
             raise ValueError("ssl設定ミス")

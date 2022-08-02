@@ -1,0 +1,353 @@
+    
+    ===============================================
+    ============== dslr_webcam ==============
+    ===============================================
+    ---------------------------------------------------------
+        cuda_dir: 1
+        batch_size: 256,	 epochs: 300,	 model: encoder,
+        log_dir: record/Office31/CUDA1/dw__new_test
+        spread_message: __new_test
+    ---------------------------------------------------------
+    
+  [dslr] 398
+  [dslr] 100
+  [webcam] 636
+  [webcam] 159
+Epoch: 1/300
+	 Loss: 10.4056
+	 Class_Loss: 5.36 	 Domain_Loss: 5.04
+	 [Class]  nmi_domain: 0.40,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.19,	 nmi_class: 0.15,	 domain_acc: 0.75
+Epoch: 2/300
+	 Loss: 10.2275
+	 Class_Loss: 5.31 	 Domain_Loss: 4.92
+	 [Class]  nmi_domain: 0.21,	 nmi_class: 0.15,	 domain_acc: 0.75
+	 [Domain] nmi_domain: 0.45,	 nmi_class: 0.15,	 domain_acc: 0.86
+Epoch: 3/300
+	 Loss: 10.1684
+	 Class_Loss: 5.33 	 Domain_Loss: 4.83
+	 [Class]  nmi_domain: 0.40,	 nmi_class: 0.14,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.37,	 nmi_class: 0.15,	 domain_acc: 0.83
+Epoch: 4/300
+	 Loss: 10.2076
+	 Class_Loss: 5.33 	 Domain_Loss: 4.88
+	 [Class]  nmi_domain: 0.35,	 nmi_class: 0.14,	 domain_acc: 0.83
+	 [Domain] nmi_domain: 0.32,	 nmi_class: 0.14,	 domain_acc: 0.81
+Epoch: 5/300
+	 Loss: 10.1633
+	 Class_Loss: 5.30 	 Domain_Loss: 4.87
+	 [Class]  nmi_domain: 0.38,	 nmi_class: 0.14,	 domain_acc: 0.84
+	 [Domain] nmi_domain: 0.35,	 nmi_class: 0.14,	 domain_acc: 0.82
+Epoch: 6/300
+	 Loss: 55.4226
+	 Class_Loss: 5.25 	 Domain_Loss: 4.79 	 MINE_Loss: 0.45
+	 Mutual_Information: -0.45386064052581787
+	 [Class]  nmi_domain: 0.37,	 nmi_class: 0.14,	 domain_acc: 0.83
+	 [Domain] nmi_domain: 0.42,	 nmi_class: 0.14,	 domain_acc: 0.85
+Epoch: 7/300
+	 Loss: 52.9178
+	 Class_Loss: 5.24 	 Domain_Loss: 4.87 	 MINE_Loss: 0.43
+	 Mutual_Information: -0.4280683994293213
+	 [Class]  nmi_domain: 0.42,	 nmi_class: 0.14,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.45,	 nmi_class: 0.14,	 domain_acc: 0.86
+Epoch: 8/300
+	 Loss: 48.3976
+	 Class_Loss: 5.28 	 Domain_Loss: 4.82 	 MINE_Loss: 0.38
+	 Mutual_Information: -0.38295888900756836
+	 [Class]  nmi_domain: 0.46,	 nmi_class: 0.15,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.45,	 nmi_class: 0.14,	 domain_acc: 0.86
+Epoch: 9/300
+	 Loss: 46.0752
+	 Class_Loss: 5.29 	 Domain_Loss: 4.88 	 MINE_Loss: 0.36
+	 Mutual_Information: -0.35902929306030273
+	 [Class]  nmi_domain: 0.43,	 nmi_class: 0.15,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.42,	 nmi_class: 0.15,	 domain_acc: 0.85
+Epoch: 10/300
+	 Loss: 48.7998
+	 Class_Loss: 5.24 	 Domain_Loss: 4.83 	 MINE_Loss: 0.39
+	 Mutual_Information: -0.38731110095977783
+	 [Class]  nmi_domain: 0.47,	 nmi_class: 0.14,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.47,	 nmi_class: 0.13,	 domain_acc: 0.87
+Epoch: 11/300
+	 Loss: 47.3896
+	 Class_Loss: 5.28 	 Domain_Loss: 4.85 	 MINE_Loss: 0.37
+	 Mutual_Information: -0.37261033058166504
+	 [Class]  nmi_domain: 0.44,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.45,	 nmi_class: 0.15,	 domain_acc: 0.86
+Epoch: 12/300
+	 Loss: 39.5504
+	 Class_Loss: 5.27 	 Domain_Loss: 4.86 	 MINE_Loss: 0.29
+	 Mutual_Information: -0.29422086477279663
+	 [Class]  nmi_domain: 0.43,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.42,	 nmi_class: 0.14,	 domain_acc: 0.85
+Epoch: 13/300
+	 Loss: 43.6994
+	 Class_Loss: 5.26 	 Domain_Loss: 4.82 	 MINE_Loss: 0.34
+	 Mutual_Information: -0.3361634314060211
+	 [Class]  nmi_domain: 0.41,	 nmi_class: 0.15,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.46,	 nmi_class: 0.14,	 domain_acc: 0.87
+Epoch: 14/300
+	 Loss: 42.8979
+	 Class_Loss: 5.32 	 Domain_Loss: 4.90 	 MINE_Loss: 0.33
+	 Mutual_Information: -0.32677584886550903
+	 [Class]  nmi_domain: 0.43,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.43,	 nmi_class: 0.14,	 domain_acc: 0.86
+Epoch: 15/300
+	 Loss: 43.8722
+	 Class_Loss: 5.28 	 Domain_Loss: 4.79 	 MINE_Loss: 0.34
+	 Mutual_Information: -0.3379950523376465
+	 [Class]  nmi_domain: 0.27,	 nmi_class: 0.14,	 domain_acc: 0.80
+	 [Domain] nmi_domain: 0.15,	 nmi_class: 0.14,	 domain_acc: 0.69
+Epoch: 16/300
+	 Loss: 54.3320
+	 Class_Loss: 5.27 	 Domain_Loss: 4.82 	 MINE_Loss: 0.44
+	 Mutual_Information: -0.44243741035461426
+	 [Class]  nmi_domain: 0.24,	 nmi_class: 0.14,	 domain_acc: 0.79
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.14,	 domain_acc: 0.85
+Epoch: 17/300
+	 Loss: 52.3631
+	 Class_Loss: 5.26 	 Domain_Loss: 4.82 	 MINE_Loss: 0.42
+	 Mutual_Information: -0.4228151738643646
+	 [Class]  nmi_domain: 0.28,	 nmi_class: 0.15,	 domain_acc: 0.81
+	 [Domain] nmi_domain: 0.35,	 nmi_class: 0.15,	 domain_acc: 0.84
+Epoch: 18/300
+	 Loss: 72.7083
+	 Class_Loss: 5.28 	 Domain_Loss: 4.85 	 MINE_Loss: 0.63
+	 Mutual_Information: -0.6257840394973755
+	 [Class]  nmi_domain: 0.31,	 nmi_class: 0.16,	 domain_acc: 0.82
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 19/300
+	 Loss: 59.8892
+	 Class_Loss: 5.28 	 Domain_Loss: 4.83 	 MINE_Loss: 0.50
+	 Mutual_Information: -0.497836172580719
+	 [Class]  nmi_domain: 0.35,	 nmi_class: 0.15,	 domain_acc: 0.84
+	 [Domain] nmi_domain: 0.43,	 nmi_class: 0.15,	 domain_acc: 0.85
+Epoch: 20/300
+	 Loss: 55.4330
+	 Class_Loss: 5.26 	 Domain_Loss: 4.81 	 MINE_Loss: 0.45
+	 Mutual_Information: -0.4535519480705261
+	 [Class]  nmi_domain: 0.40,	 nmi_class: 0.15,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.42,	 nmi_class: 0.13,	 domain_acc: 0.85
+Epoch: 21/300
+	 Loss: 68.0773
+	 Class_Loss: 5.21 	 Domain_Loss: 4.82 	 MINE_Loss: 0.58
+	 Mutual_Information: -0.5804340839385986
+	 [Class]  nmi_domain: 0.43,	 nmi_class: 0.15,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.43,	 nmi_class: 0.15,	 domain_acc: 0.86
+Epoch: 22/300
+	 Loss: 57.4603
+	 Class_Loss: 5.23 	 Domain_Loss: 4.89 	 MINE_Loss: 0.47
+	 Mutual_Information: -0.47338199615478516
+	 [Class]  nmi_domain: 0.40,	 nmi_class: 0.14,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.43,	 nmi_class: 0.14,	 domain_acc: 0.86
+Epoch: 23/300
+	 Loss: 56.7062
+	 Class_Loss: 5.23 	 Domain_Loss: 4.84 	 MINE_Loss: 0.47
+	 Mutual_Information: -0.4663581848144531
+	 [Class]  nmi_domain: 0.43,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.43,	 nmi_class: 0.14,	 domain_acc: 0.85
+Epoch: 24/300
+	 Loss: 60.2749
+	 Class_Loss: 5.26 	 Domain_Loss: 4.84 	 MINE_Loss: 0.50
+	 Mutual_Information: -0.5017630457878113
+	 [Class]  nmi_domain: 0.45,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.43,	 nmi_class: 0.15,	 domain_acc: 0.85
+Epoch: 25/300
+	 Loss: 62.2823
+	 Class_Loss: 5.26 	 Domain_Loss: 4.84 	 MINE_Loss: 0.52
+	 Mutual_Information: -0.5218426585197449
+	 [Class]  nmi_domain: 0.45,	 nmi_class: 0.15,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.41,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 26/300
+	 Loss: 58.8663
+	 Class_Loss: 5.29 	 Domain_Loss: 4.87 	 MINE_Loss: 0.49
+	 Mutual_Information: -0.4870370030403137
+	 [Class]  nmi_domain: 0.47,	 nmi_class: 0.15,	 domain_acc: 0.88
+	 [Domain] nmi_domain: 0.46,	 nmi_class: 0.14,	 domain_acc: 0.87
+Epoch: 27/300
+	 Loss: 57.6812
+	 Class_Loss: 5.22 	 Domain_Loss: 4.89 	 MINE_Loss: 0.48
+	 Mutual_Information: -0.47571825981140137
+	 [Class]  nmi_domain: 0.45,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.41,	 nmi_class: 0.15,	 domain_acc: 0.84
+Epoch: 28/300
+	 Loss: 52.3282
+	 Class_Loss: 5.24 	 Domain_Loss: 4.85 	 MINE_Loss: 0.42
+	 Mutual_Information: -0.422351598739624
+	 [Class]  nmi_domain: 0.45,	 nmi_class: 0.16,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.41,	 nmi_class: 0.15,	 domain_acc: 0.83
+Epoch: 29/300
+	 Loss: 52.3727
+	 Class_Loss: 5.26 	 Domain_Loss: 4.96 	 MINE_Loss: 0.42
+	 Mutual_Information: -0.4215870499610901
+	 [Class]  nmi_domain: 0.44,	 nmi_class: 0.15,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.42,	 nmi_class: 0.15,	 domain_acc: 0.85
+Epoch: 30/300
+	 Loss: 55.2183
+	 Class_Loss: 5.23 	 Domain_Loss: 4.85 	 MINE_Loss: 0.45
+	 Mutual_Information: -0.45135414600372314
+	 [Class]  nmi_domain: 0.45,	 nmi_class: 0.15,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.41,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 31/300
+	 Loss: 59.7770
+	 Class_Loss: 5.18 	 Domain_Loss: 4.84 	 MINE_Loss: 0.50
+	 Mutual_Information: -0.49759960174560547
+	 [Class]  nmi_domain: 0.45,	 nmi_class: 0.15,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.42,	 nmi_class: 0.15,	 domain_acc: 0.85
+Epoch: 32/300
+	 Loss: 56.6801
+	 Class_Loss: 5.23 	 Domain_Loss: 4.86 	 MINE_Loss: 0.47
+	 Mutual_Information: -0.46591460704803467
+	 [Class]  nmi_domain: 0.44,	 nmi_class: 0.15,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.40,	 nmi_class: 0.16,	 domain_acc: 0.85
+Epoch: 33/300
+	 Loss: 63.6267
+	 Class_Loss: 5.21 	 Domain_Loss: 4.86 	 MINE_Loss: 0.54
+	 Mutual_Information: -0.5356442928314209
+	 [Class]  nmi_domain: 0.42,	 nmi_class: 0.15,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 34/300
+	 Loss: 63.9289
+	 Class_Loss: 5.23 	 Domain_Loss: 4.78 	 MINE_Loss: 0.54
+	 Mutual_Information: -0.539139986038208
+	 [Class]  nmi_domain: 0.44,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.40,	 nmi_class: 0.15,	 domain_acc: 0.85
+Epoch: 35/300
+	 Loss: 59.1697
+	 Class_Loss: 5.27 	 Domain_Loss: 4.93 	 MINE_Loss: 0.49
+	 Mutual_Information: -0.4897279143333435
+	 [Class]  nmi_domain: 0.39,	 nmi_class: 0.15,	 domain_acc: 0.84
+	 [Domain] nmi_domain: 0.36,	 nmi_class: 0.15,	 domain_acc: 0.82
+Epoch: 36/300
+	 Loss: 66.8762
+	 Class_Loss: 5.26 	 Domain_Loss: 4.84 	 MINE_Loss: 0.57
+	 Mutual_Information: -0.5677797794342041
+	 [Class]  nmi_domain: 0.44,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.40,	 nmi_class: 0.15,	 domain_acc: 0.83
+Epoch: 37/300
+	 Loss: 66.1540
+	 Class_Loss: 5.27 	 Domain_Loss: 4.85 	 MINE_Loss: 0.56
+	 Mutual_Information: -0.5603026151657104
+	 [Class]  nmi_domain: 0.44,	 nmi_class: 0.15,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.40,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 38/300
+	 Loss: 66.8312
+	 Class_Loss: 5.34 	 Domain_Loss: 4.85 	 MINE_Loss: 0.57
+	 Mutual_Information: -0.5663822889328003
+	 [Class]  nmi_domain: 0.48,	 nmi_class: 0.14,	 domain_acc: 0.88
+	 [Domain] nmi_domain: 0.44,	 nmi_class: 0.14,	 domain_acc: 0.85
+Epoch: 39/300
+	 Loss: 70.5961
+	 Class_Loss: 5.28 	 Domain_Loss: 4.83 	 MINE_Loss: 0.60
+	 Mutual_Information: -0.6048792600631714
+	 [Class]  nmi_domain: 0.46,	 nmi_class: 0.14,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.40,	 nmi_class: 0.14,	 domain_acc: 0.85
+Epoch: 40/300
+	 Loss: 67.2515
+	 Class_Loss: 5.30 	 Domain_Loss: 4.89 	 MINE_Loss: 0.57
+	 Mutual_Information: -0.5706145763397217
+	 [Class]  nmi_domain: 0.40,	 nmi_class: 0.14,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.14,	 domain_acc: 0.83
+Epoch: 41/300
+	 Loss: 60.4255
+	 Class_Loss: 5.28 	 Domain_Loss: 4.80 	 MINE_Loss: 0.50
+	 Mutual_Information: -0.5035306215286255
+	 [Class]  nmi_domain: 0.47,	 nmi_class: 0.14,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.42,	 nmi_class: 0.15,	 domain_acc: 0.85
+Epoch: 42/300
+	 Loss: 67.8172
+	 Class_Loss: 5.21 	 Domain_Loss: 4.82 	 MINE_Loss: 0.58
+	 Mutual_Information: -0.5779224634170532
+	 [Class]  nmi_domain: 0.44,	 nmi_class: 0.14,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.39,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 43/300
+	 Loss: 56.6859
+	 Class_Loss: 5.30 	 Domain_Loss: 4.91 	 MINE_Loss: 0.46
+	 Mutual_Information: -0.46479353308677673
+	 [Class]  nmi_domain: 0.46,	 nmi_class: 0.14,	 domain_acc: 0.87
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.14,	 domain_acc: 0.83
+Epoch: 44/300
+	 Loss: 57.1835
+	 Class_Loss: 5.16 	 Domain_Loss: 4.79 	 MINE_Loss: 0.47
+	 Mutual_Information: -0.47232162952423096
+	 [Class]  nmi_domain: 0.44,	 nmi_class: 0.15,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.41,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 45/300
+	 Loss: 57.1191
+	 Class_Loss: 5.21 	 Domain_Loss: 4.76 	 MINE_Loss: 0.47
+	 Mutual_Information: -0.47150877118110657
+	 [Class]  nmi_domain: 0.40,	 nmi_class: 0.14,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.15,	 domain_acc: 0.84
+Epoch: 46/300
+	 Loss: 60.6712
+	 Class_Loss: 5.22 	 Domain_Loss: 4.78 	 MINE_Loss: 0.51
+	 Mutual_Information: -0.5067423582077026
+	 [Class]  nmi_domain: 0.41,	 nmi_class: 0.16,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.42,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 47/300
+	 Loss: 63.2503
+	 Class_Loss: 5.21 	 Domain_Loss: 4.79 	 MINE_Loss: 0.53
+	 Mutual_Information: -0.5324612855911255
+	 [Class]  nmi_domain: 0.35,	 nmi_class: 0.15,	 domain_acc: 0.84
+	 [Domain] nmi_domain: 0.36,	 nmi_class: 0.14,	 domain_acc: 0.83
+Epoch: 48/300
+	 Loss: 68.0294
+	 Class_Loss: 5.25 	 Domain_Loss: 4.78 	 MINE_Loss: 0.58
+	 Mutual_Information: -0.579983115196228
+	 [Class]  nmi_domain: 0.39,	 nmi_class: 0.14,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.15,	 domain_acc: 0.84
+Epoch: 49/300
+	 Loss: 61.3970
+	 Class_Loss: 5.33 	 Domain_Loss: 4.82 	 MINE_Loss: 0.51
+	 Mutual_Information: -0.512458086013794
+	 [Class]  nmi_domain: 0.40,	 nmi_class: 0.15,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 50/300
+	 Loss: 59.9013
+	 Class_Loss: 5.27 	 Domain_Loss: 4.76 	 MINE_Loss: 0.50
+	 Mutual_Information: -0.4986565113067627
+	 [Class]  nmi_domain: 0.35,	 nmi_class: 0.14,	 domain_acc: 0.84
+	 [Domain] nmi_domain: 0.37,	 nmi_class: 0.14,	 domain_acc: 0.84
+Epoch: 51/300
+	 Loss: 53.9631
+	 Class_Loss: 5.21 	 Domain_Loss: 4.88 	 MINE_Loss: 0.44
+	 Mutual_Information: -0.43872931599617004
+	 [Class]  nmi_domain: 0.39,	 nmi_class: 0.15,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.33,	 nmi_class: 0.14,	 domain_acc: 0.82
+Epoch: 52/300
+	 Loss: 54.4416
+	 Class_Loss: 5.31 	 Domain_Loss: 4.89 	 MINE_Loss: 0.44
+	 Mutual_Information: -0.4424588680267334
+	 [Class]  nmi_domain: 0.39,	 nmi_class: 0.15,	 domain_acc: 0.85
+	 [Domain] nmi_domain: 0.37,	 nmi_class: 0.15,	 domain_acc: 0.84
+Epoch: 53/300
+	 Loss: 42.0680
+	 Class_Loss: 5.20 	 Domain_Loss: 4.89 	 MINE_Loss: 0.32
+	 Mutual_Information: -0.3197816014289856
+	 [Class]  nmi_domain: 0.38,	 nmi_class: 0.15,	 domain_acc: 0.84
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.15,	 domain_acc: 0.84
+Epoch: 54/300
+	 Loss: 48.5159
+	 Class_Loss: 5.19 	 Domain_Loss: 4.78 	 MINE_Loss: 0.39
+	 Mutual_Information: -0.38542282581329346
+	 [Class]  nmi_domain: 0.37,	 nmi_class: 0.15,	 domain_acc: 0.84
+	 [Domain] nmi_domain: 0.32,	 nmi_class: 0.14,	 domain_acc: 0.82
+Epoch: 55/300
+	 Loss: 43.0311
+	 Class_Loss: 5.23 	 Domain_Loss: 4.90 	 MINE_Loss: 0.33
+	 Mutual_Information: -0.3290124833583832
+	 [Class]  nmi_domain: 0.43,	 nmi_class: 0.14,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.35,	 nmi_class: 0.15,	 domain_acc: 0.83
+Epoch: 56/300
+	 Loss: 49.0043
+	 Class_Loss: 5.26 	 Domain_Loss: 4.89 	 MINE_Loss: 0.39
+	 Mutual_Information: -0.38857564330101013
+	 [Class]  nmi_domain: 0.41,	 nmi_class: 0.15,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.38,	 nmi_class: 0.15,	 domain_acc: 0.85
+Epoch: 57/300
+	 Loss: 46.8649
+	 Class_Loss: 5.24 	 Domain_Loss: 4.83 	 MINE_Loss: 0.37
+	 Mutual_Information: -0.36801502108573914
+	 [Class]  nmi_domain: 0.41,	 nmi_class: 0.15,	 domain_acc: 0.86
+	 [Domain] nmi_domain: 0.33,	 nmi_class: 0.14,	 domain_acc: 0.83
+Epoch: 58/300

@@ -6,17 +6,26 @@ from joblib import Parallel, delayed
 from PIL import Image
 import scipy.stats as stats
 from sklearn.model_selection import train_test_split
+import sys
 
+import torch.nn.functional as F
 import torch.utils.data as data
 from torchvision.transforms import transforms
 
+sys.path.append('../domain_estimation_ssl')
+from functions import input_const_values
+
+
 
 def load(config, root, filename, resize):
-    return Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
+    im = Image.open(os.path.join(root, filename)).convert("RGB").resize(resize)
+    # im = input_const_values(im, resize, const_abs=True, const_pha=False, n_random = resize[0] * resize[1] // 6, const_value=0 )  # 位相・振幅に一定値を入れる．
+
+    return im
     
 
 class LabeledDataset(data.Dataset):
-    def __init__(self, config, root, filenames, labels, true_domain_label, resize, transform, edls=None):
+    def __init__(self, config, root, filenames, labels, true_domain_label, resize, transform, edls, ed_feats):
         self.config = config
         self.root = root
         self.labels = labels
@@ -27,23 +36,26 @@ class LabeledDataset(data.Dataset):
         self.pseudo_label = np.zeros(len(self.imgs))
         self.history = np.zeros((len(self.imgs), self.num_history))
         self.edls = edls
-        
+        self.ed_feats = ed_feats
+
 
     def __getitem__(self, index):
-        img, label = self.imgs[index], self.labels[index]
-        # true_domain_label = self.true_domain_labels[index]
+        img = self.imgs[index]
+        label = self.labels[index]
         edl = self.edls[index]
+        ed_feat = self.ed_feats[index]
         hist = self.pseudo_label[index]
+
         img = self.transform(img)
-        # return img, label, true_domain_label, hist, index
-        return img, label, edl, hist, index
+
+        if self.config.training_mode == "mine":
+            return img, label, ed_feat, hist, index
+        else:
+            return img, label, edl, hist, index
 
     def __len__(self):
         return len(self.imgs)
     
-    # def update_domain_label(self, new_domain_labels):
-    #     self.domain_labels = new_domain_labels
-
     def update_labels(self, index, results):
         self.history[index] = np.hstack((self.history[index, 1:], results.reshape(-1, 1)))
 
@@ -57,6 +69,7 @@ class LabeledDataset(data.Dataset):
         self.labels = np.concatenate([self.labels, dataset.labels])
         self.true_domain_labels = np.concatenate([self.true_domain_labels, dataset.true_domain_labels])
         self.edls = np.concatenate([self.edls, dataset.edls])
+        self.ed_feats = np.concatenate([self.ed_feats, dataset.ed_feats])
         self.history = np.concatenate([self.history, dataset.history])
         self.pseudo_label = np.concatenate([self.pseudo_label, dataset.pseudo_label])
 
@@ -99,6 +112,7 @@ def get_transforms(config):
         ])
         
     return train_transform, test_transform
+
 
 
 def get_lut_dataset(config, logger, dset_taple, true_domain_label, edls):
@@ -166,7 +180,7 @@ def get_lut_dataset(config, logger, dset_taple, true_domain_label, edls):
 
 
 
-def get_lut_dataset_office31(config, logger, dset_taple, true_domain_label, edls):
+def get_lut_dataset_office31(config, logger, dset_taple, true_domain_label, edls, ed_feats=None):
     """ 
     Office31用
         trainファイルとtestファイルが分かれていないので,この関数内で分ける.
@@ -192,6 +206,8 @@ def get_lut_dataset_office31(config, logger, dset_taple, true_domain_label, edls
     # 推定ドメインラベル
     target_edls = edls[:len(filenames)]
     next_edls = edls[len(filenames):]  # 次のdset用に前半を削除したedls
+    target_ed_feats = ed_feats[:len(filenames)]
+    next_ed_feats = ed_feats[len(filenames):]  # 次のdset用に前半を削除したed_feats
 
     train_files, test_files = train_test_split(filenames, train_size=0.75, shuffle=True)
     train_index = sorted([list(filenames).index(x) for x in train_files])
@@ -209,49 +225,51 @@ def get_lut_dataset_office31(config, logger, dset_taple, true_domain_label, edls
     labeled_train_filenames = filenames[labeled_train_index]
     labeled_train_labels = labels[labeled_train_index]
     labeled_train_edls = target_edls[labeled_train_index]
+    labeled_train_ed_feats = target_ed_feats[labeled_train_index]
     # unlabeled train
     unlabeled_train_filenames = filenames[unlabeled_train_index]
     unlabeled_train_labels = labels[unlabeled_train_index]
     unlabeled_train_edls = target_edls[unlabeled_train_index]
+    unlabeled_train_ed_feats = target_ed_feats[unlabeled_train_index]
     # test
     test_filenames = filenames[test_index]
     test_labels = labels[test_index]
     test_edls = target_edls[test_index]
+    test_ed_feats = target_ed_feats[test_index]
 
     img_root = os.path.join(text_root, "imgs")
     train_transform, test_transform = get_transforms(config)
     logger.info(f"  [{dset_taple[0]}] read labeled train {len(labeled_train_filenames)}")
-    labeled_dataset = LabeledDataset(config, img_root, labeled_train_filenames, labeled_train_labels, true_domain_label, resize, train_transform, labeled_train_edls)
+    labeled_dataset = LabeledDataset(config, img_root, labeled_train_filenames, labeled_train_labels, true_domain_label, resize, train_transform, labeled_train_edls, labeled_train_ed_feats)
     logger.info(f"  [{dset_taple[0]}] read unlabeled train {len(unlabeled_train_filenames)}")
-    unlabeled_dataset = LabeledDataset(config, img_root, unlabeled_train_filenames, unlabeled_train_labels, true_domain_label, resize, train_transform, unlabeled_train_edls)
+    unlabeled_dataset = LabeledDataset(config, img_root, unlabeled_train_filenames, unlabeled_train_labels, true_domain_label, resize, train_transform, unlabeled_train_edls, unlabeled_train_ed_feats)
     logger.info(f"  [{dset_taple[0]}] read test {len(test_filenames)}")
-    test_dataset = LabeledDataset(config, img_root, test_filenames, test_labels, true_domain_label, resize, test_transform, test_edls)
+    test_dataset = LabeledDataset(config, img_root, test_filenames, test_labels, true_domain_label, resize, test_transform, test_edls, test_ed_feats)
 
     logger.info(f"  [{dset_taple[0]}] unique_total_num: {len(np.unique(labeled_train_index + unlabeled_train_index + test_index))}\n")
 
-    return labeled_dataset, unlabeled_dataset, test_dataset, next_edls
+
+    return labeled_dataset, unlabeled_dataset, test_dataset, next_edls, next_ed_feats
 
 
 
 def get_datasets(config, logger):
     """
-    args:
-        mode: train or test -> transformを決める
     reutrn:
         ld: labeled_dataset
         ud: unknown_labeled_dataset
         td_list: test_datasetのdsetごとのリスト
         len(union_classes): クラス数(???)
     """
-    # csvから推定ドメインラベルを取得(Noneは許さない)
-    clustering_filename = "_".join([d[0] for d in config.dset_taples]) + ".csv"
-    if config.clustering_method == "simCLR":
-        edls = np.loadtxt(os.path.join("clustering", config.parent, clustering_filename), delimiter=",").astype(int)
-    elif config.clustering_method == "simCLR_OSDA":
-        edls = np.loadtxt(os.path.join("clustering/OSDA", config.parent, clustering_filename), delimiter=",").astype(int)
+    # csvから推定ドメインラベルを取得
+    if config.training_mode == "mine":
+        # edls_filename = f"{config.target_dsets_name}_edls.csv"
+        ed_feats = np.loadtxt(os.path.join(config.est_domains_dir, f"{config.target_dsets_name}.csv"), delimiter=",")
+        edls = np.empty(len(ed_feats))
     else:
-        print("edls are not set")
-        raise ValueError("edls are not set")
+        ed_filename = f"{config.target_dsets_name}.csv"
+        edls = np.loadtxt(os.path.join(config.est_domains_dir, ed_filename), delimiter=",")
+        ed_feats = np.empty(len(edls))
 
     union_classes = np.unique(sum([t[1] for t in config.dset_taples],[]))
     config.num_class = len(union_classes) + 1  # Out-Of-Distributionのクラス数はconfig.num_class-1
@@ -259,11 +277,11 @@ def get_datasets(config, logger):
     get_lut_func = get_lut_dataset_office31 if config.parent == 'Office31' else get_lut_dataset
 
     td_list = []
-    ld, ud, td, edls = get_lut_func(config, logger, config.dset_taples[0], 0, edls)
+    ld, ud, td, edls, ed_feats = get_lut_func(config, logger, config.dset_taples[0], 0, edls, ed_feats)
     td_list.append([config.dset_taples[0][0], relabeling_dataset(td, union_classes)])
 
     for i, dset_taple in enumerate(config.dset_taples[1:]):
-        ld_t, ud_t, td_t, edls = get_lut_func(config, logger, dset_taple, i + 1, edls)
+        ld_t, ud_t, td_t, edls, ed_feats = get_lut_func(config, logger, dset_taple, i + 1, edls, ed_feats)
         ld.concat_dataset(ld_t)
         ud.concat_dataset(ud_t)
         td_list.append([dset_taple[0], relabeling_dataset(td_t, union_classes)])

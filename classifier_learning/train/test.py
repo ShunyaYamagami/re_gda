@@ -63,7 +63,7 @@ def eval_step(config, logger, writer, feature_extractor, class_classifier, td_li
         accuracy_list.append((domain, accuracy))
 
         correct_num = np.sum(np.equal(preds, labels))  # 正解データ数
-        logger.info(f'\t Target_Accuracy [{domain}]: {correct_num}/{len(labels)} ({100 * accuracy:.2f}%)')
+        logger.info(f'\t Target_Accuracy [{domain}]: {correct_num}/{len(labels):.2f} ({100 * accuracy:.2f}%)')
         writer.add_scalar(f'logs/{domain}/Target_Accuracy', accuracy, epoch)
 
     labels_list = np.concatenate(labels_list)

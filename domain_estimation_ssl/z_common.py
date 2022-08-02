@@ -19,7 +19,7 @@ from email.utils import formatdate
 import traceback
 
 
-LOG_TEXT = 'SimSiam'
+LOG_TEXT = ''
 
 
 def config_to_execute(DATA_DOMAIN, PARENT, N_CUDA, log_dir_opt):
@@ -31,7 +31,7 @@ def config_to_execute(DATA_DOMAIN, PARENT, N_CUDA, log_dir_opt):
     CONFIG_FILE = os.path.join(os.path.join('config', PARENT, f"{domain_initials}.yaml"))
     config = yaml.load(open(CONFIG_FILE, "r"), Loader=yaml.FullLoader)
     config = EasyDict(config)
-    log_dir = os.path.join("record", f"{config.dataset.parent}", f"CUDA{N_CUDA}", f"{domain_initials}_{config.model.base_model}{log_dir_opt}")
+    log_dir = os.path.join("record", f"{config.dataset.parent}", f"CUDA{N_CUDA}", f"{domain_initials}{log_dir_opt}")
 
     return config, CONFIG_FILE, log_dir
 

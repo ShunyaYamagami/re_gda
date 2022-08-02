@@ -115,7 +115,6 @@ class SVHN_Class_classifier(nn.Module):
         return x
 
 class SVHN_Domain_classifier(nn.Module):
-
     def __init__(self, num_domains=2):
         super(SVHN_Domain_classifier, self).__init__()
         self.fc1 = Dense_Block(3200, 100)

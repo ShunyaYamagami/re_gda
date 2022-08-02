@@ -6,12 +6,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.metrics import normalized_mutual_info_score as NMI
+from sklearn.metrics import accuracy_score
 
-from models.baseline_encoder import Encoder
-from models.alexnet_simclr import AlexSimCLR
-from models.resnet_simclr import ResNetSimCLR
 from loss.nt_xent import NTXentLoss
+from clustering import run_clustering
+from util import get_models_func
 
+torch.manual_seed(0)
 
 
 apex_support = False
@@ -25,33 +27,12 @@ except:
     apex_support = False
 
 
-torch.manual_seed(0)
-
-
-def get_models_func(config):
-    if config.dataset.parent == "Digit":
-        if config.model.base_model == 'encoder':
-            model = Encoder(config.model.ssl, input_dim=3, out_dim=config.model.out_dim, pseudo_out_dim=config.pseudo_out_dim)
-        else:
-            print("  ------  モデル未選択 -----")
-    elif config.dataset.parent == "Office31":
-        if config.model.base_model == "alexnet":
-            model = AlexSimCLR(config.model.out_dim)
-        elif config.model.base_model == 'encoder':
-            model = Encoder(config.model.ssl, input_dim=3, out_dim=config.model.out_dim, pseudo_out_dim=config.pseudo_out_dim)
-        else:
-            model = ResNetSimCLR(config.model.base_model, config.model.out_dim)
-    
-    model = model.to(config.device)
-    return model
-
-
 
 class SimCLR(object):
     def __init__(self, dataset, config, logger):
         self.config = config
         self.logger = logger
-        self.writer = SummaryWriter(log_dir=config.tensorboard_log_dir)
+        self.writer = SummaryWriter(log_dir = os.path.join(config.log_dir, 'logs'))
         self.dataset = dataset
         self.nt_xent_criterion = NTXentLoss(config, config.batch_size, **config.loss)
 
@@ -78,16 +59,17 @@ class SimCLR(object):
 
         loss1 = criterion(pis, zjs).mean()  # predictopnとprojectionを比較して類似度計算
         loss2 = criterion(pjs, zis).mean()  # 2つの損失関数を用意する
-        loss = -(loss1 + loss2) / 2  # それぞれの損失を最適化する
-        return loss
-
-
-    def _random_pseudo_step(self, model, x, criterion, edls):
-        pred = model(x)
-        pred = F.normalize(pred, dim=1)
-        loss = criterion(pred, edls)
+        loss = - (loss1 + loss2) / 2  # それぞれの損失を最適化する
 
         return loss
+
+
+    def _random_pseudo_step(self, epoch, model, x, criterion, edls, index):
+        _, sigmoid_pseudo = model(x)
+        loss = criterion(sigmoid_pseudo, edls)
+
+        return loss
+
 
     def train(self, does_load_model=False):
         train_loader = torch.utils.data.DataLoader(self.dataset, batch_size=self.config.batch_size, shuffle=True, num_workers=2, drop_last=True)
@@ -96,28 +78,20 @@ class SimCLR(object):
         # ADD 2回目任意で1回目の重みをロードしてファインチューニングできればと．
         if does_load_model:
             model = self._load_pre_trained_weights(self.config, model)
-            # de-fine tuningみたいな
-            # for layers in list(model.children())[:-3]:
-            #     for param in layers.parameters():
-            #         param.requires_grad = False
-            
-        # set criterion
         if self.config.model.ssl == 'simsiam':
-            model.ssl = self.config.model.ssl
             criterion = nn.CosineSimilarity(dim=1).to(self.config.device)  # コサイン類似度
         if self.config.model.ssl == 'random_pseudo':
-            model.ssl = self.config.model.ssl
             criterion = nn.BCEWithLogitsLoss().to(self.config.device)
-        # set optimizer
         optimizer = torch.optim.Adam(model.parameters(), 1e-3, weight_decay=eval(self.config.weight_decay))
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0, last_epoch=-1)
         if apex_support and self.config.fp16_precision:
             model, optimizer = amp.initialize(model, optimizer, opt_level='O2', keep_batchnorm_fp32=True)
 
         n_iter = 0
-        for epoch_counter in range(self.config.epochs):
-            for xis, xjs, edls in train_loader:
-                xis, xjs, edls = xis.to(self.config.device), xjs.to(self.config.device), edls.to(self.config.device)
+        for epoch in range(self.config.epochs):
+            model.train()
+            for xis, xjs, edls, index in train_loader:
+                xis, xjs, edls, index = xis.to(self.config.device), xjs.to(self.config.device), edls.to(self.config.device), index.to(self.config.device)
 
                 optimizer.zero_grad()
 
@@ -126,10 +100,10 @@ class SimCLR(object):
                 elif self.config.model.ssl == 'simsiam':
                     loss = self._simsiam_step(model, xis, xjs, criterion, edls)
                 elif self.config.model.ssl == 'random_pseudo':
-                    loss = self._random_pseudo_step(model, xis, criterion, edls)
+                    loss = self._random_pseudo_step(epoch, model, xis, criterion, edls, index)
 
                 if n_iter % self.config.log_every_n_steps == 0:
-                    self.logger.info(f'Epoch:{epoch_counter}/{self.config.epochs}({n_iter}) loss:{loss}')
+                    self.logger.info(f'Epoch:{epoch}/{self.config.epochs}({n_iter}) loss:{loss}')
                     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
 
                 if apex_support and self.config.fp16_precision:
@@ -142,15 +116,17 @@ class SimCLR(object):
                 scheduler.step()
                 n_iter += 1
 
-            torch.save(model.state_dict(), self.config.model_path)
+            torch.save(model.state_dict(), os.path.join(self.config.checkpoints_dir, "model.pth"))
 
 
     def _load_pre_trained_weights(self, config, model):
         try:
             if config.lap == 1:
                 load_model_dir = config.log_dir
+            elif config.lap == 2:
+                load_model_dir = config.log_dir_origin
             else:
-                load_model_dir = config.log_dir__old
+                load_model_dir = os.path.join(config.log_dir_origin, f"lap{config.lap - 1}")
             self.logger.info(f"  ----- Loaded pre-trained model from {load_model_dir} for SSL  -----")
             state_dict = torch.load(os.path.join('./', load_model_dir, 'checkpoints', 'model.pth'))
             model.load_state_dict(state_dict)

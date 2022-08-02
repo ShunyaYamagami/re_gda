@@ -6,7 +6,7 @@ from train.util import save_models, get_model
 from train.test import eval_step
     
 
-def source_step(config, logger, feature_extractor, class_classifier, source_dataloader, class_criterion, optimizer):
+def source_step(config, logger, feature_extractor, class_classifier, source_dataloader, class_criterion, optimizer, scheduler):
     """ 
     args:
         source_dataloader: img, label, edl, hist(pseudo_label), index
@@ -30,6 +30,7 @@ def source_step(config, logger, feature_extractor, class_classifier, source_data
         class_loss = class_criterion(class_preds, true_clabel)
         class_loss.backward()
         optimizer.step()
+        scheduler.step()
 
     # print loss
     prompts = f'\t Class Loss: {class_loss.item():.6f}'
@@ -40,7 +41,7 @@ def source_step(config, logger, feature_extractor, class_classifier, source_data
 def run_source(config, logger, writer, ld, td_list):
     src_train_dataloader = torch.utils.data.DataLoader(ld, config.batch_size, shuffle=True, num_workers=2)
     class_criterion = nn.CrossEntropyLoss()
-    feature_extractor, class_classifier, _, = get_model(config, use_weights=True)
+    feature_extractor, class_classifier, _, = get_model(config, logger, use_weights=True)
 
     if config.optim == "Adam":
         optimizer = optim.Adam([
@@ -55,13 +56,21 @@ def run_source(config, logger, writer, ld, td_list):
     else:
         raise NotImplementedError
 
+    # set scheduler
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=len(src_train_dataloader),
+        eta_min=0,
+        last_epoch=-1
+    )
+
     config.best = 0.0
     for epoch in range(config.epochs):
         logger.info(f'Epoch: {epoch+1}/{config.epochs}')
         
         source_step(
             config, logger, feature_extractor, class_classifier, 
-            src_train_dataloader, class_criterion, optimizer
+            src_train_dataloader, class_criterion, optimizer, scheduler
         )
         total_acc, accuracy_list, mtx = eval_step(
             config, logger, writer, feature_extractor, class_classifier, td_list, epoch

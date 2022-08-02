@@ -8,7 +8,7 @@ from train.util import save_models, get_model
 from train.test import eval_step
 
 
-def get_dataloader_with_sampling(config, ld, ud):
+def get_dataloader_with_sampling(config, logger, ld, ud):
     if config.clustering_method == "simCLR" and config.parent != 'Digit':
         logger.info('use weighted sampler')
         edls = np.concatenate([ld.edls, ud.edls])
@@ -35,6 +35,7 @@ def _get_data_from_minibatch(config, sdata, tdata):
     src_ims, src_labels, src_edls = src_ims[0:size, :, :, :], src_labels[0:size], src_edls[0:size]
     tgt_ims, tgt_edls, tgt_hist, tgt_idx = tgt_ims[0:size, :, :, :], tgt_edls[0:size], tgt_hist[0:size], tgt_idx[0:size]
     src_labels, tgt_hist = src_labels.long(), tgt_hist.long()
+    src_edls, tgt_edls = src_edls.long(), tgt_edls.long()
     src_ims, src_labels, src_edls, tgt_ims, tgt_edls, tgt_hist = [r.to(config.device) for r in [src_ims, src_labels, src_edls, tgt_ims, tgt_edls, tgt_hist]]
 
     return src_ims, src_labels, src_edls, tgt_ims, tgt_edls, tgt_hist, tgt_idx
@@ -43,8 +44,8 @@ def _get_data_from_minibatch(config, sdata, tdata):
 
 
 def dann_OS_step(
-    config, logger, feature_extractor, class_classifier, domain_classifier,
-    source_dataloader, target_dataloader, class_criterion, domain_criterion, optimizer, epoch, ood_class=-1
+    config, logger, feature_extractor, class_classifier, domain_classifier, source_dataloader, target_dataloader,
+    class_criterion, domain_criterion, optimizer, scheduler, epoch, ood_class=-1
 ):
     """
         source_dataloader: img, label, edl, hist(pseudo_label), index
@@ -113,6 +114,7 @@ def dann_OS_step(
         
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         with torch.no_grad():
             feature_extractor.eval()
@@ -145,7 +147,7 @@ def run_dann_OS(config, logger, writer, ld, ud, td_list):
     tgt_train_dataloader = torch.utils.data.DataLoader(ud, config.batch_size, shuffle=True, num_workers=2)
 
     # get models
-    feature_extractor, class_classifier, domain_classifier = get_model(config, use_weights=True)
+    feature_extractor, class_classifier, domain_classifier = get_model(config, logger, use_weights=True)
     # set criterions
     class_criterion = nn.CrossEntropyLoss()
     domain_criterion = nn.CrossEntropyLoss()
@@ -165,12 +167,20 @@ def run_dann_OS(config, logger, writer, ld, ud, td_list):
     else:
         raise NotImplementedError
 
+    # set scheduler
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        T_max=max(len(src_train_dataloader), len(tgt_train_dataloader)),
+        eta_min=0,
+        last_epoch=-1
+    )
+
     config.best = 0
     for epoch in range(config.epochs):
         logger.info(f'Epoch: {epoch+1}/{config.epochs}')
         dann_OS_step(
-            config, logger, feature_extractor, class_classifier, domain_classifier,
-            src_train_dataloader, tgt_train_dataloader, class_criterion, domain_criterion, optimizer, epoch, ood_class=config.num_class-1
+            config, logger, feature_extractor, class_classifier, domain_classifier, src_train_dataloader, tgt_train_dataloader,
+            class_criterion, domain_criterion, optimizer, scheduler, epoch, ood_class=config.num_class-1
         )
         total_acc, accuracy_list, mtx = eval_step(
             config, logger, writer, feature_extractor, class_classifier, td_list, epoch
