@@ -6,11 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
-from sklearn.metrics import normalized_mutual_info_score as NMI
-from sklearn.metrics import accuracy_score
 
 from loss.nt_xent import NTXentLoss
-from clustering import run_clustering
 from util import get_models_func
 
 torch.manual_seed(0)

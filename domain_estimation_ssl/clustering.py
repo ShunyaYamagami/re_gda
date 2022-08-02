@@ -65,8 +65,7 @@ def clustering_exec(config, logger, feats, dim_red_method, clust_method, dataset
     domain_cluster = np.array(domain_clustering.fit_predict(feats_dim_reduced))
     class_cluster = np.array(class_clustering.fit_predict(feats_dim_reduced))
 
-    # domain_clusterが0,1逆になってもNMIは変わらない.
-    nmi = NMI(dataset.true_domain_labels, domain_cluster)
+    nmi = NMI(dataset.true_domain_labels, domain_cluster)  # domain_clusterが0,1逆になってもNMIは変わらない.
     nmi_class = NMI(dataset.labels, class_cluster)
     if len(config.target_dsets_name.split('_')) == 2:
         domain_accuracy = np.max([accuracy_score(dataset.true_domain_labels, domain_cluster), 1 - accuracy_score(dataset.true_domain_labels, domain_cluster)])

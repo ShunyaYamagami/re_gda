@@ -88,19 +88,6 @@ def main():
     logger = set_logger_writer(config)
     mail_body_texts = []
 
-    # if config.cuda_dir == 0:
-    #     config.model.out_dim = 4
-    # elif config.cuda_dir == 1:
-    #     config.model.out_dim = 8
-    # elif config.cuda_dir == 2:
-    #     config.model.out_dim = 16
-    # elif config.cuda_dir == 3:
-    #     config.model.out_dim = 32
-    # elif config.cuda_dir == 4:
-    #     config.model.out_dim = 64
-    # elif config.cuda_dir == 5:
-    #     config.model.out_dim = 128
-
     logger.info(f"""    
     ===============================================
     ==============  {config.target_dsets_name}  ==============

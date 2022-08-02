@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 import numpy as np
-import itertools
-import gc
 
 class NTXentLoss(nn.Module):
     def __init__(self, config, batch_size, temperature, use_cosine_similarity):
@@ -53,8 +51,7 @@ class NTXentLoss(nn.Module):
         """ 最初にバッチ内の全ての組合せの類似度行列を作り,正例か負例かでフィルタケ掛けてInfoNCEを計算する. """
         representations = torch.cat([zjs, zis], dim=0)  # 縦に結合
         similarity_matrix = self.similarity_function(representations, representations)  # 類似度行列の作成
-        
-        # # 類似度行列からpositive/negativeの要素を取り出す.
+        # 類似度行列からpositive/negativeの要素を取り出す.
         positives = similarity_matrix[self._get_pos_neg_masks(positive=True)].view(self.batch_size, -1)  # 1次元化したものをviewで
 
         if self.config.lap == 1:

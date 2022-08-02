@@ -36,6 +36,8 @@ def get_models_func(config):
 
 
 def set_logger_writer(config):
+    if os.path.exists(config.log_dir):
+        shutil.rmtree(config.log_dir)
     os.makedirs(config.checkpoints_dir, exist_ok=True)
     logger = getLogger("show_loss_accuarcy")
     logger.setLevel(DEBUG)

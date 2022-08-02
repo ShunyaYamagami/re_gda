@@ -33,56 +33,32 @@ def load(fi, config, root, filename, resize) -> Image:
 
     
     if config.cuda_dir == 0:
-        if config.test_counter == 0:
-            pass
-        if config.test_counter == 1:
+        # if config.test_counter == 1:
             im = get_jigsaw(im, resize, grid)
-        if config.test_counter == 2:
+            
+    if config.cuda_dir == 1:
+        # if config.test_counter == 2:
             im = cutmix_self(im, resize, grid=3, n_cutmix=2)
         
-    if config.cuda_dir == 1:
-        if config.test_counter == 0:
+    if config.cuda_dir == 2:
+        # if config.test_counter == 0:
             im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random=0, const_value=0)
             im = get_jigsaw(im, resize, grid)
-        if config.test_counter == 1:
+    if config.cuda_dir == 3:
+        # if config.test_counter == 1:
             im = input_random_values(im, resize, randomize_abs=False, randomize_pha=True, n_random=0)
-            im = get_jigsaw(im, resize, grid)
-            
-    if config.cuda_dir == 2:
-        if config.test_counter == 0:
-            im = leave_amp_pha_big_small(im, amp_pha='pha', big_small='big')
-            im = get_jigsaw(im, resize, grid)
-        if config.test_counter == 1:
-            im = leave_amp_pha_big_small(im, amp_pha='pha', big_small='small')
             im = get_jigsaw(im, resize, grid)
 
-    if config.cuda_dir == 3:
-        if config.test_counter == 0:
-            im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random=0, const_value=0)
-            im = cutmix_self(im, resize, grid=3, n_cutmix=2)
-        if config.test_counter == 1:
-            im = input_random_values(im, resize, randomize_abs=False, randomize_pha=True, n_random=0)
-            im = cutmix_self(im, resize, grid=3, n_cutmix=2)
-            
     if config.cuda_dir == 4:
-        if config.test_counter == 0:
-            im = leave_amp_pha_big_small(im, amp_pha='pha', big_small='big')
-            im = cutmix_self(im, resize, grid=3, n_cutmix=2)
-        if config.test_counter == 1:
-            im = leave_amp_pha_big_small(im, amp_pha='pha', big_small='small')
+        # if config.test_counter == 0:
+            im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random=0, const_value=0)
             im = cutmix_self(im, resize, grid=3, n_cutmix=2)
 
     if config.cuda_dir == 5:
-        if config.test_counter == 0:
-            im = input_const_values(im, resize, const_abs=False, const_pha=True, n_random=0, const_value=0)
-        if config.test_counter == 1:
+        # if config.test_counter == 1:
             im = input_random_values(im, resize, randomize_abs=False, randomize_pha=True, n_random=0)
-    
-    if config.cuda_dir == 6:
-        if config.test_counter == 0:
-            im = leave_amp_pha_big_small(im, amp_pha='pha', big_small='big')
-        if config.test_counter == 1:
-            im = leave_amp_pha_big_small(im, amp_pha='pha', big_small='small')
+            im = cutmix_self(im, resize, grid=3, n_cutmix=2)
+
 
     return fi, im
 

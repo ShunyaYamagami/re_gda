@@ -61,23 +61,27 @@ def get_mine_loss(config, logger, extracted_feature, ed_feats, mine_net):
         each_not_edl_indices: ドメインラベルが0,1,2の3種類だったら, each_not_edl_indicesの長さは3. それぞれそのドメインに該当しない要素のインデックスのリストを格納. 
         例)  batch_size:8,  バッチのドメインラベル: [0 1 0 1 1 2 0 2]    =>    each_not_edl_indices: [[1, 3, 4, 5, 7], [0, 2, 5, 6, 7], [0, 1, 2, 3, 4, 6]]
     """
+    ##############################################################################################################################
     # marginal samplesの取得
     if config.cuda_dir == 0 or config.cuda_dir == 1:
+        # 類似度が小さいサンプルを取得
         cosine_similarity = nn.CosineSimilarity(dim=-1)
         similarity_matrix = cosine_similarity(extracted_feature.unsqueeze(1), ed_feats.unsqueeze(0))  # (縦, 横)で類似度行列作成
         marginal_index = similarity_matrix.min(dim=1).indices  # extracted_featureの各行の最小値のインデックスを取得->類似度が最小のed_feat
     if config.cuda_dir == 2 or config.cuda_dir == 3:
+        # 完全ランダム
         marginal_index = torch.randint(0, len(ed_feats), size=(len(ed_feats),))
+    ##############################################################################################################################
         
-    ed_feats = F.normalize(ed_feats, dim=1)    ######(正規化しても最小類似度は変わらない)###################################################
+    ed_feats = F.normalize(ed_feats, dim=1)    ######(正規化しても最小類似度は変わらない)#####################
     marginal_ed_feats = ed_feats[marginal_index]
 
     Tj = mine_net(extracted_feature, ed_feats)
-    Tj = F.normalize(Tj, dim=1)  ####### これ付けてた方がTotal_Accuracy良くなるっぽい? ##################################################
+    Tj = F.normalize(Tj, dim=1)  ####### これ付けてた方がTotal_Accuracy良くなるっぽい? ####################
     Tj = torch.mean(Tj)
     
     Tm = mine_net(extracted_feature, marginal_ed_feats)
-    Tm = F.normalize(Tm, dim=1)  ####### これ付けてた方がTotal_Accuracy良くなるっぽい? ##################################################
+    Tm = F.normalize(Tm, dim=1)  ####### これ付けてた方がTotal_Accuracy良くなるっぽい? ####################
     expTm = torch.mean(torch.exp(Tm))
     
     config.ma_expTm = ((1-config.ma_rate) * config.ma_expTm + config.ma_rate * expTm.detach().item())  # Moving Average expTm
